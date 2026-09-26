@@ -62,6 +62,70 @@ export function drawCrystal(ctx: Ctx, c: Crystal, x: number, y: number, t: numbe
 }
 
 export function drawCreeper(ctx: Ctx, c: Creeper, x: number, y: number, t: number, theme: Theme): void {
+  if (c.kind === 'jumper') drawJumper(ctx, c, x, y, t, theme);
+  else drawCrawler(ctx, c, x, y, t, theme);
+}
+
+/** Where a pouncing jumper will land: a blinking ring on the ground, so the player can step aside. */
+export function drawPounceMarker(ctx: Ctx, c: Creeper, x: number, y: number, t: number): void {
+  const j = c.jump;
+  if (!j || (j.phase !== 'crouch' && j.phase !== 'pounce')) return;
+  const color = Math.sin(t * 18) > 0 ? '#ff3050' : '#ff9aa8';
+  rect(ctx, x - 4, y - 1, 9, 1, color);
+  rect(ctx, x - 6, y, 2, 1, color);
+  rect(ctx, x + 5, y, 2, 1, color);
+  rect(ctx, x - 4, y + 2, 9, 1, color);
+  rect(ctx, x - 6, y + 1, 2, 1, color);
+  rect(ctx, x + 5, y + 1, 2, 1, color);
+}
+
+/** A round hopper with big eyes. Squashes while crouching, stretches in the air. x, y is the ground point. */
+function drawJumper(ctx: Ctx, c: Creeper, x: number, y: number, t: number, theme: Theme): void {
+  const j = c.jump!;
+  const col = theme.creeper;
+  const z = Math.round(j.z);
+  const shadow = Math.max(4, 7 - Math.floor(z / 4));
+  rect(ctx, x - shadow, y - 1, shadow * 2, 2, SHADOW);
+
+  const crouching = j.phase === 'crouch';
+  const airborne = z > 0;
+  const recovering = j.phase === 'recover';
+  const w = crouching ? 12 : airborne ? 8 : 10;
+  const h = crouching ? 5 : airborne ? 9 : 7;
+  const by = y - 2 - z;
+  const bx = x - w / 2;
+
+  // Feet: tucked in the air, spread on the ground.
+  if (!airborne) {
+    rect(ctx, x - 5, y - 2, 3, 2, col[5]);
+    rect(ctx, x + 2, y - 2, 3, 2, col[5]);
+  } else {
+    rect(ctx, x - 3, by, 2, 2, col[5]);
+    rect(ctx, x + 1, by, 2, 2, col[5]);
+  }
+  rect(ctx, bx, by - h, w, h, j.phase === 'crouch' || c.mode === 'chase' ? col[1] : col[0]);
+  rect(ctx, bx + 1, by - h - 1, w - 2, 1, col[2]);
+  rect(ctx, bx + 1, by - h, 3, 1, col[3]);
+  rect(ctx, bx, by - 1, w, 1, col[4]);
+
+  // Two big eyes looking where it faces; half closed while recovering.
+  const f = c.facing;
+  const ey = by - h + 2;
+  const e1 = f > 0 ? x : x - 3;
+  const eye = crouching ? '#ff6070' : '#ff3050';
+  rect(ctx, e1, ey, 2, recovering ? 1 : 2, '#f4f0ff');
+  rect(ctx, e1 + 3, ey, 2, recovering ? 1 : 2, '#f4f0ff');
+  if (!recovering) {
+    rect(ctx, e1 + (f > 0 ? 1 : 0), ey + 1, 1, 1, eye);
+    rect(ctx, e1 + 3 + (f > 0 ? 1 : 0), ey + 1, 1, 1, eye);
+  }
+  if (crouching && Math.sin(t * 16) > -0.2) {
+    rect(ctx, x, by - h - 8, 1, 3, '#ff3050');
+    rect(ctx, x, by - h - 4, 1, 1, '#ff3050');
+  }
+}
+
+function drawCrawler(ctx: Ctx, c: Creeper, x: number, y: number, t: number, theme: Theme): void {
   const chasing = c.mode === 'chase';
   const frame = Math.floor(t * (chasing ? 11 : 6)) % 2;
   const col = theme.creeper;

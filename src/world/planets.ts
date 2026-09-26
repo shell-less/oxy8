@@ -1,4 +1,5 @@
 import { THEMES, type Theme } from './themes';
+import type { CreeperKind } from './types';
 
 export interface PlanetDef {
   name: string;
@@ -8,6 +9,8 @@ export interface PlanetDef {
   partsNeeded: number;
   /** Supply bunkers that hold a one-time energy cell. */
   energyCells: number;
+  /** Which kind of creeper guards the bunkers. Defaults to crawlers. */
+  creepers?: CreeperKind;
 }
 
 /**
@@ -18,5 +21,5 @@ export interface PlanetDef {
 export const PLANETS: readonly PlanetDef[] = [
   { name: 'Kepler-442', seed: 442, theme: THEMES.red, partsNeeded: 3, energyCells: 3 },
   { name: 'Nereid-117', seed: 117, theme: THEMES.blue, partsNeeded: 5, energyCells: 4 },
-  { name: 'Umbra-9', seed: 9, theme: THEMES.purple, partsNeeded: 5, energyCells: 4 },
+  { name: 'Umbra-9', seed: 9, theme: THEMES.purple, partsNeeded: 5, energyCells: 4, creepers: 'jumper' },
 ];

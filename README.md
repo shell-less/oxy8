@@ -32,7 +32,7 @@ npm run typecheck
 npm run build      # production build in dist/
 ```
 
-Add `?debug` to the URL to show debug buttons: fast clock, repair the engine instantly, +50 energy, show all tips again. The dev server always shows them.
+Add `?debug` to the URL to show debug buttons: fast clock, repair the engine instantly, +50 energy, show all tips again. The dev server always shows them. In debug mode `oxy8.state()` in the browser console returns the live game state.
 
 Every push to `main` is tested, built and deployed to GitHub Pages. Pull requests run the same checks.
 
