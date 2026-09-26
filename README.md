@@ -12,7 +12,8 @@ A small pixel-art space survival game for the browser. You crash on a planet, yo
 | E (hold) | Open a bunker, install a part, open the ship menu (workbench and star map) |
 | Q | Use an oxygen bottle |
 | R | Place a decoy beacon |
-| M | Sound on or off |
+| M | All sound on or off |
+| N | Music on or off |
 | 1-9, Esc | Pick a destination on the star map, close it |
 | F | Helmet lamp on or off |
 | Enter or Space | Continue from a menu screen |

@@ -3,8 +3,10 @@ export type HazardKind = 'storm' | 'cold' | 'meteor' | 'toxic';
 type RGB = readonly [number, number, number];
 
 /** Everything that makes one kind of planet look and behave differently. */
+export type ThemeId = 'red' | 'blue' | 'purple' | 'green';
+
 export interface Theme {
-  id: string;
+  id: ThemeId;
   /** Dutch colour word shown in the HUD. */
   colourName: string;
   hazard: HazardKind;
@@ -34,7 +36,7 @@ export interface Theme {
   creeper: readonly [string, string, string, string, string, string];
 }
 
-export const THEMES: Record<'red' | 'blue' | 'purple' | 'green', Theme> = {
+export const THEMES: Record<ThemeId, Theme> = {
   red: {
     id: 'red',
     colourName: 'rood',
