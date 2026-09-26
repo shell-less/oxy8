@@ -9,6 +9,7 @@ import { Hud } from './render/hud';
 import { Minimap } from './render/minimap';
 import { Renderer } from './render/renderer';
 import { StarMap } from './render/starmap';
+import { Tips } from './render/tips';
 import { PLANETS } from './world/planets';
 
 const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -20,6 +21,7 @@ const minimap = new Minimap(byId<HTMLCanvasElement>('minimap'));
 const hud = new Hud();
 const keyboard = new Keyboard();
 const starMap = new StarMap(pickDestination, resume);
+const tips = new Tips();
 
 const params = new URLSearchParams(location.search);
 const debug = import.meta.env.DEV || params.has('debug');
@@ -78,6 +80,7 @@ function briefing(): void {
 function start(): void {
   hideOverlay();
   running = true;
+  tips.landed();
   const planet = state.world.planet;
   hud.showToast(`Geland op ${planet.name}. Let op: ${planet.theme.hazardName.toLowerCase()}`);
   canvas.focus();
@@ -124,10 +127,21 @@ function confirmNewGame(): void {
   ]);
 }
 
+/** Title screen: continue a saved game, start a new one, switch tips on or off. */
 function title(): void {
   const saved = readSave();
+  const tipsButton: OverlayButton = {
+    label: tips.enabled ? 'Tips: aan' : 'Tips: uit',
+    action: () => {
+      tips.setEnabled(!tips.enabled);
+      title();
+    },
+  };
   if (!saved) {
-    arrive(landOn(0));
+    showOverlay('Oxy8', '', 'Je bent neergestort. Houd je zuurstof op peil en repareer je schip.', [
+      { label: 'Nieuw spel', action: newGame },
+      tipsButton,
+    ]);
     return;
   }
   const planet = PLANETS[saved.live.planetIndex];
@@ -138,6 +152,7 @@ function title(): void {
       briefing();
     } },
     { label: 'Nieuw spel', action: confirmNewGame },
+    tipsButton,
   ]);
 }
 
@@ -204,6 +219,11 @@ if (debug) {
     state.energy = Math.min(100, state.energy + 50);
     canvas.focus();
   });
+  byId('dbg-tips').addEventListener('click', () => {
+    tips.reset();
+    hud.showToast('Debug: tips worden opnieuw getoond');
+    canvas.focus();
+  });
 }
 
 title();
@@ -221,6 +241,7 @@ function frame(now: number): void {
     if (state.status === 'dead') onDeath();
     else if (state.status === 'stranded') onStranded();
   }
+  tips.update(state, dt, running);
   for (const text of renderer.consumeEvents(state)) hud.showToast(text);
   renderer.update(state, dt);
   renderer.draw(state);

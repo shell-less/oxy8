@@ -89,6 +89,20 @@ html, body { margin: 0; height: 100%; }
   pointer-events: none;
 }
 
+#tip {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(46%, 30em);
+  display: flex;
+  gap: 0.6em;
+  align-items: baseline;
+  border-color: rgba(255, 233, 160, 0.5);
+  pointer-events: none;
+}
+#tip[hidden] { display: none; }
+.tip-label { color: #ffe9a0; font-weight: 600; }
+
 #hint {
   bottom: 8px;
   left: 50%;

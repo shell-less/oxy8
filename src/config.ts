@@ -76,6 +76,18 @@ export const CONFIG = {
     bunkerSpacing: 130,
   },
 
+  tips: {
+    /** Seconds after landing before the first tip. */
+    firstDelay: 0.8,
+    /** How long a tip stays on screen, in seconds. */
+    showSeconds: 7,
+    /** Quiet time between two tips, in seconds. */
+    gapSeconds: 2,
+    nearBunker: 110,
+    nearCreeper: 90,
+    lowOxygen: 50,
+  },
+
   hazards: {
     storm: {
       firstAfter: 35,

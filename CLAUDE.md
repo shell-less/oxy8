@@ -31,10 +31,10 @@ src/
                      generate (pure, deterministic layout), types.
   game/              state (GameState, landOn, events), update (step: runs the systems in order),
                      campaign (per-planet progress, engine unlocks, leftovers), travel (star map rows,
-                     flying), save (localStorage, validated, versioned).
+                     flying), save (localStorage, validated, versioned), tutorial (tips and when to show them).
   systems/           movement, interaction, creepers, hazards, survival. Pure functions on GameState.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
-                     ground (painted once per planet), particles, minimap, hud and starmap (DOM).
+                     ground (painted once per planet), particles, minimap, hud, starmap and tips (DOM).
 tests/               Vitest tests for world generation and systems.
 ```
 
@@ -50,6 +50,7 @@ tests/               Vitest tests for world generation and systems.
 ### Adding things
 
 - **A new planet:** add an entry to `PLANETS` in `world/planets.ts`. It should be at least as hard as the previous one (the tests check this).
+- **A new mechanic:** add a tip for it to `TIPS` in `game/tutorial.ts`, triggered at the moment the player first needs it.
 - **A new planet type or hazard:** add a theme to `world/themes.ts`, extend `HazardKind`, handle it in `systems/hazards.ts` (return modifiers), `render/hud.ts` (status text) and, if it has visuals, `render/renderer.ts`. TypeScript's exhaustive switches point you to every place.
 
 ## Workflow
