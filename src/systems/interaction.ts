@@ -57,7 +57,10 @@ export function describe(state: GameState, target: Target | null): ActionInfo | 
   if (b.kind === 'parts') {
     return b.looted ? info('Bunker is leeg') : info('[E] Onderdelenbunker openen', 'open', ia.openPartsSeconds);
   }
-  if (state.oxygen > 97 && !b.energyCell) return info('Zuurstoftank is vol');
+  const cellFits = b.energyCell && canTakeCell(state);
+  if (state.oxygen > 97 && !cellFits) {
+    return info(b.energyCell ? 'Zuurstof vol, energie te vol voor de energiecel' : 'Zuurstoftank is vol');
+  }
   return info('[E] Voorraadbunker openen', 'open', ia.openSupplySeconds);
 }
 
@@ -97,6 +100,11 @@ function sameTargetAs(a: Target | null, b: Target | null): boolean {
   return a.bunker === b.bunker;
 }
 
+/** Cells are only taken when all their energy fits, so none is wasted and the planet's budget holds. */
+function canTakeCell(state: GameState): boolean {
+  return state.energy + CONFIG.energy.cellAmount <= CONFIG.energy.max;
+}
+
 function perform(state: GameState, target: Target, action: Action): void {
   const needed = state.world.planet.partsNeeded;
   if (target.kind === 'ship') {
@@ -133,9 +141,11 @@ function perform(state: GameState, target: Target, action: Action): void {
 
   state.oxygen = 100;
   let text = 'Zuurstof bijgevuld';
-  if (b.energyCell) {
+  if (b.energyCell && !canTakeCell(state)) {
+    text += '. Energiecel blijft liggen: je energie is te vol';
+  } else if (b.energyCell) {
     b.energyCell = false;
-    state.energy = Math.min(100, state.energy + CONFIG.energy.cellAmount);
+    state.energy += CONFIG.energy.cellAmount;
     text += `, energiecel +${CONFIG.energy.cellAmount}`;
   }
   emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#4fd8ff', count: 16 });

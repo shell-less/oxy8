@@ -34,8 +34,10 @@ export const CONFIG = {
   },
 
   energy: {
-    /** Energy per second while the helmet lamp is on at night. About 11 per night. */
-    lampPerSecond: 0.12,
+    /** The energy bar is full at this value. */
+    max: 100,
+    /** Energy per second while the helmet lamp is on in the dark (~146 s per night): about 12 per night. */
+    lampPerSecond: 0.08,
     installCost: 20,
     cellAmount: 35,
     /** Every flight between planets, forward or back. */
