@@ -56,12 +56,16 @@ Dying rolls back to the moment you landed on the current planet: the planet, you
 
 **Stranded is game over.** With less energy than a flight costs and no energy cells left on the current planet, the ship can never leave. The game ends and the save is removed. Energy is the long-term resource: spending it on the lamp or on trips back is a real choice.
 
+## Tutorial
+
+No tutorial level and no manual. Short tips appear at the moment they become useful, one at a time at the top of the screen, each only once per browser: how to walk, what the bunkers are, that creepers cannot be beaten, where to take a part, what to do when oxygen runs low, the helmet lamp at dusk and without lamp at night, the star map once the engine is ready, and leftovers on earlier planets. The tips live in `src/game/tutorial.ts` in priority order. The title screen can switch them off; a new game does not repeat tips already seen.
+
 ## Roadmap
 
 1. ~~Project setup: Vite, TypeScript, CI, GitHub Pages~~
 2. ~~Port the mockup into modules with the same behaviour~~
 3. ~~Progression: star map, travel back to earlier planets, save progress in the browser~~
-4. Tutorial, including the helmet lamp
+4. ~~Tutorial: contextual tips, including the helmet lamp~~
 5. Crafting formulas for more complex objects
 6. Polish: sound, balance, title screen
 

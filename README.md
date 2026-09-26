@@ -16,7 +16,7 @@ A small pixel-art space survival game for the browser. You crash on a planet, yo
 
 Keep your oxygen above zero. Supply bunkers (blue) always refill oxygen and sometimes hold a one-time energy cell (yellow light). Parts bunkers (orange stripes) hold one ship part each. Install all parts of a planet to make the engine strong enough for the next one. Installing costs energy, and so do the helmet lamp at night and every flight. The star map shows how many energy cells are left on planets you visited, so you can fly back for them. Creepers cannot be killed: a hit tears your suit for 25% oxygen.
 
-The game saves itself in your browser.
+The game saves itself in your browser. Short tips explain the rest while you play; switch them off on the title screen.
 
 Each planet has its own hazard: sandstorms, freezing nights, meteor showers, and (on a later planet) toxic pools.
 
@@ -32,7 +32,7 @@ npm run typecheck
 npm run build      # production build in dist/
 ```
 
-Add `?debug` to the URL to show debug buttons: fast clock, repair the engine instantly, +50 energy. The dev server always shows them.
+Add `?debug` to the URL to show debug buttons: fast clock, repair the engine instantly, +50 energy, show all tips again. The dev server always shows them.
 
 Every push to `main` is tested, built and deployed to GitHub Pages. Pull requests run the same checks.
 

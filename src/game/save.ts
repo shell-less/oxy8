@@ -88,3 +88,32 @@ function isProgress(p: PlanetProgress): boolean {
   return Array.isArray(p.lootedBunkers) && Array.isArray(p.takenCells)
     && typeof p.partsCarried === 'number' && typeof p.partsInstalled === 'number' && typeof p.explored === 'string';
 }
+
+/** Tutorial tips are per browser, not per game: a new game does not repeat tips already seen. */
+export interface TipSettings {
+  enabled: boolean;
+  seen: string[];
+}
+
+const TIPS_KEY = 'oxy8.tips';
+
+export function readTipSettings(store: KeyValueStore | null = browserStore()): TipSettings {
+  try {
+    const raw = store?.getItem(TIPS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Partial<TipSettings>) : {};
+    return {
+      enabled: parsed.enabled !== false,
+      seen: Array.isArray(parsed.seen) ? parsed.seen.filter((x): x is string => typeof x === 'string') : [],
+    };
+  } catch {
+    return { enabled: true, seen: [] };
+  }
+}
+
+export function writeTipSettings(settings: TipSettings, store: KeyValueStore | null = browserStore()): void {
+  try {
+    store?.setItem(TIPS_KEY, JSON.stringify(settings));
+  } catch {
+    // Not important enough to fail over.
+  }
+}
