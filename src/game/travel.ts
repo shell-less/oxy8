@@ -1,5 +1,5 @@
 import { PLANETS } from '../world/planets';
-import { energyCellsLeft, flightCost, snapshotCampaign } from './campaign';
+import { energyCellsLeft, flightCost, scrapLeft, snapshotCampaign } from './campaign';
 import { landOn, type GameState } from './state';
 
 export type DestinationStatus = 'here' | 'visited' | 'new' | 'locked' | 'unknown' | 'home';
@@ -12,6 +12,8 @@ export interface Destination {
   status: DestinationStatus;
   /** Energy cells left there, when known. */
   energyCells: number | null;
+  /** Scrap left there, when known. */
+  scrap: number | null;
   /** Current planet only: installed/needed. */
   parts: { installed: number; needed: number } | null;
   canFly: boolean;
@@ -27,7 +29,10 @@ export function destinations(state: GameState): Destination[] {
   const affordable = state.energy >= cost;
   const tooPoor = `Te weinig energie (${cost} nodig)`;
   const rows: Destination[] = PLANETS.map((planet, index) => {
-    const base = { index, name: planet.name, energyCells: energyCellsLeft(state, index), parts: null, canFly: false, note: '' };
+    const base = {
+      index, name: planet.name, energyCells: energyCellsLeft(state, index), scrap: scrapLeft(state, index),
+      parts: null, canFly: false, note: '',
+    };
     if (index === state.planetIndex) {
       return {
         ...base,
@@ -49,11 +54,11 @@ export function destinations(state: GameState): Destination[] {
       const needed = PLANETS[index - 1].partsNeeded;
       return { ...base, status: 'locked', note: `Motor te zwak: repareer eerst ${PLANETS[index - 1].name} (${needed} onderdelen)` };
     }
-    return { ...base, name: '???', status: 'unknown', energyCells: null, note: 'Buiten bereik' };
+    return { ...base, name: '???', status: 'unknown', energyCells: null, scrap: null, note: 'Buiten bereik' };
   });
   if (unlocked >= HOME_INDEX) {
     rows.push({
-      index: HOME_INDEX, name: 'Naar huis', status: 'home', energyCells: null, parts: null,
+      index: HOME_INDEX, name: 'Naar huis', status: 'home', energyCells: null, scrap: null, parts: null,
       canFly: affordable, note: affordable ? 'Einde van de reis' : tooPoor,
     });
   }
@@ -73,5 +78,5 @@ export function travel(state: GameState, index: number): TravelResult {
     const next = { ...state, energy, campaign, status: 'escaped' as const, events: [] };
     return { ok: true, state: next };
   }
-  return { ok: true, state: landOn(index, { energy, campaign }) };
+  return { ok: true, state: landOn(index, { energy, campaign, inventory: state.inventory }) };
 }

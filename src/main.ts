@@ -1,6 +1,7 @@
 import './style.css';
 import { Keyboard } from './core/input';
 import { unlockIfRepaired } from './game/campaign';
+import { craft } from './game/crafting';
 import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
 import { landOn, type GameState } from './game/state';
 import { travel, type Destination } from './game/travel';
@@ -20,7 +21,12 @@ const renderer = new Renderer(canvas.getContext('2d')!);
 const minimap = new Minimap(byId<HTMLCanvasElement>('minimap'));
 const hud = new Hud();
 const keyboard = new Keyboard();
-const starMap = new StarMap(pickDestination, resume);
+const starMap = new StarMap(pickDestination, resume, (id) => {
+  const result = craft(state, id);
+  if (!result.ok) hud.showToast(result.note);
+  else save();
+  starMap.open(state);
+});
 const tips = new Tips();
 
 const params = new URLSearchParams(location.search);

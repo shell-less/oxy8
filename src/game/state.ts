@@ -40,6 +40,24 @@ export interface Player {
 
 export interface Meteor { x: number; y: number; timeLeft: number }
 
+/** What the player carries between planets, besides energy. */
+export interface Inventory {
+  scrap: number;
+  /** Oxygen bottles, used with Q. */
+  bottles: number;
+  /** Decoy beacons, placed with R. */
+  beacons: number;
+  /** Suit reinforcement: a one-time upgrade. */
+  armour: boolean;
+}
+
+export function emptyInventory(): Inventory {
+  return { scrap: 0, bottles: 0, beacons: 0, armour: false };
+}
+
+/** A decoy beacon placed on this planet. Creepers nearby go for it instead of the player. */
+export interface Beacon { x: number; y: number; timeLeft: number }
+
 export interface HazardState {
   /** Seconds of storm left; 0 when calm. */
   storm: number;
@@ -70,6 +88,9 @@ export interface GameState {
   /** Parts found on this planet and not yet installed count as carried. */
   partsCarried: number;
   partsInstalled: number;
+  inventory: Inventory;
+  /** Beacons placed on this planet that are still working. */
+  beacons: Beacon[];
   /** Progress on all planets, and how far the engine reaches. The current planet's entry is stale until captured. */
   campaign: Campaign;
   /** Seconds since 00:00 on day 1. */
@@ -89,6 +110,7 @@ export interface GameState {
 
 export interface LandingOptions {
   energy?: number;
+  inventory?: Inventory;
   campaign?: Campaign;
 }
 
@@ -119,6 +141,8 @@ export function landOn(planetIndex: number, options: LandingOptions = {}): GameS
     energy: options.energy ?? CONFIG.player.startEnergy,
     partsCarried: 0,
     partsInstalled: 0,
+    inventory: options.inventory ? { ...options.inventory } : emptyInventory(),
+    beacons: [],
     campaign,
     time: (CONFIG.day.startHour / 24) * CONFIG.day.lengthSeconds,
     timeScale: 1,

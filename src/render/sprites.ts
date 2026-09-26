@@ -1,6 +1,7 @@
 import type { Player } from '../game/state';
 import type { Theme } from '../world/themes';
-import type { Bunker, Creeper, Crystal } from '../world/types';
+import type { Beacon } from '../game/state';
+import type { Bunker, Creeper, Crystal, Scrap } from '../world/types';
 import { rect, type Ctx } from './pixels';
 
 const SHADOW = 'rgba(5,4,12,.45)';
@@ -175,4 +176,31 @@ export function drawPlayer(ctx: Ctx, p: Player, x: number, y: number, t: number,
   rect(ctx, visorX + 1, y - 15, 1, 1, '#bff3ff');
   rect(ctx, f > 0 ? x + 3 : x - 4, y - 16, 1, 1, lamp ? '#fff2b0' : '#555');
   if (p.leak > 0) rect(ctx, packX + (f > 0 ? 0 : 1), y - 9, 1, 1, Math.sin(t * 20) > 0 ? '#ff5060' : '#fff');
+}
+
+/** A twisted piece of hull plating with a glint now and then. */
+export function drawScrap(ctx: Ctx, s: Scrap, x: number, y: number, t: number): void {
+  rect(ctx, x - 4, y, 8, 1, SHADOW);
+  rect(ctx, x - 4, y - 2, 5, 2, '#8a929a');
+  rect(ctx, x - 1, y - 4, 4, 2, '#b8c0c8');
+  rect(ctx, x + 2, y - 2, 2, 2, '#6a7078');
+  rect(ctx, x - 3, y - 2, 1, 1, '#c8662c');
+  if (Math.sin(t * 2.5 + s.phase) > 0.93) {
+    rect(ctx, x, y - 6, 1, 3, '#ffffff');
+    rect(ctx, x - 1, y - 5, 3, 1, '#ffffff');
+  }
+}
+
+/** A small mast with a blinking red light. Blinks faster when it is about to run out. */
+export function drawBeacon(ctx: Ctx, b: Beacon, x: number, y: number, t: number): void {
+  rect(ctx, x - 3, y, 6, 1, SHADOW);
+  rect(ctx, x - 2, y - 2, 4, 2, '#5f6870');
+  rect(ctx, x, y - 9, 1, 7, '#9aa4ac');
+  const speed = b.timeLeft < 4 ? 14 : 5;
+  const on = Math.sin(t * speed) > 0;
+  rect(ctx, x - 1, y - 11, 3, 2, on ? '#ff3050' : '#6a1a24');
+  if (on) {
+    rect(ctx, x - 3, y - 10, 1, 1, '#ff9aa8');
+    rect(ctx, x + 3, y - 10, 1, 1, '#ff9aa8');
+  }
 }

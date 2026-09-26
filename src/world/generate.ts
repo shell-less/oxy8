@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import { createRng, deriveSeed, type Rng } from '../core/rng';
 import type { PlanetDef } from './planets';
-import type { Bunker, Circle, Creeper, Crystal, Pool, World } from './types';
+import type { Bunker, Circle, Creeper, Crystal, Pool, Scrap, World } from './types';
 
 const MARGIN = 40;
 
@@ -124,7 +124,34 @@ export function generateWorld(planet: PlanetDef): World {
     { x: ship.x + 10, y: ship.y - 9, r: 12 },
   ];
 
-  return { planet, width, height, ship, bunkers, rocks, crystals, pools, creepers, solids };
+  const scrap = placeScrap(planet, width, height, ship, solids, pools);
+
+  return { planet, width, height, ship, bunkers, rocks, crystals, pools, creepers, scrap, solids };
+}
+
+/**
+ * Scrap uses its own seed and runs after everything else, so adding it did not move
+ * any bunker, rock or crystal on planets that players already have saves for.
+ */
+function placeScrap(planet: PlanetDef, width: number, height: number, ship: { x: number; y: number }, solids: Circle[], pools: Pool[]): Scrap[] {
+  const rng = createRng(deriveSeed(planet.seed, 4));
+  const scrap: Scrap[] = [];
+  const clear = (x: number, y: number) =>
+    Math.hypot(x - ship.x, y - ship.y) > 60 &&
+    solids.every((o) => Math.hypot(o.x - x, o.y - y) > o.r + 8) &&
+    !isInPool(pools, x, y) &&
+    scrap.every((o) => Math.hypot(o.x - x, o.y - y) > 90);
+  for (let i = 0; i < CONFIG.crafting.scrapPerPlanet; i++) {
+    let x = 0;
+    let y = 0;
+    for (let attempt = 0; attempt < 200; attempt++) {
+      x = rng.range(MARGIN, width - MARGIN);
+      y = rng.range(MARGIN, height - MARGIN);
+      if (clear(x, y)) break;
+    }
+    scrap.push({ id: i, x: Math.round(x), y: Math.round(y), taken: false, phase: rng.next() * Math.PI * 2 });
+  }
+  return scrap;
 }
 
 export function isInPool(pools: Pool[], x: number, y: number): boolean {

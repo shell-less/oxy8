@@ -160,7 +160,12 @@ html, body { margin: 0; height: 100%; }
 #starmap[hidden] { display: none; }
 #starmap-title { font-size: 1.4em; font-weight: 600; }
 #starmap-sub, #starmap-foot { color: var(--muted); }
-#starmap-list { display: flex; flex-direction: column; gap: 0.4em; overflow: auto; }
+#starmap-list, #workbench-list { display: flex; flex-direction: column; gap: 0.4em; }
+#workbench-sub { color: var(--muted); }
+.section-title { margin-top: 0.4em; color: #ffe9a0; }
+#starmap { overflow: auto; }
+#inventory { color: #d8e0e8; }
+#inventory:empty { display: none; }
 
 .dest {
   display: grid;
@@ -174,6 +179,7 @@ html, body { margin: 0; height: 100%; }
 .dest .name { color: var(--ink); }
 .dest .note { color: var(--muted); font-size: 0.85em; grid-column: 2; }
 .dest .loot { grid-row: span 2; color: var(--energy); text-align: right; }
+.dest .cost { grid-row: span 2; color: #d8e0e8; text-align: right; }
 .dest[aria-disabled='true'] { opacity: 0.55; cursor: default; }
 .dest[aria-disabled='true']:hover { background: transparent; }
 .dest.here { border-color: #7dff8a; }

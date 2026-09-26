@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
+import { anyCraftable } from './crafting';
 import { isRepaired, type GameState } from './state';
 
 /** Context the game state does not track itself. */
@@ -56,6 +57,26 @@ export const TIPS: readonly Tip[] = [
     when: (s) => s.partsCarried > s.partsInstalled,
   },
   {
+    id: 'scrap',
+    text: 'Glinsterend schroot: loop eroverheen om het op te pakken. Bij je schip maak je er spullen van.',
+    when: (s) => s.world.scrap.some((x) => !x.taken && near(s, x.x, x.y, CONFIG.tips.nearScrap)),
+  },
+  {
+    id: 'craft',
+    text: 'Je hebt genoeg schroot om iets te maken. Houd E vast bij je schip en kies op de werkbank.',
+    when: (s) => anyCraftable(s),
+  },
+  {
+    id: 'bottle',
+    text: 'Weinig zuurstof? Druk op Q om je zuurstoffles te gebruiken.',
+    when: (s) => s.inventory.bottles > 0 && s.oxygen < CONFIG.tips.lowOxygen,
+  },
+  {
+    id: 'beacon',
+    text: 'Druk op R om een lokbaken neer te zetten. Kruipers in de buurt gaan er even op af in plaats van op jou.',
+    when: (s) => s.inventory.beacons > 0 && s.world.creepers.some((c) => near(s, c.x, c.y, CONFIG.tips.nearCreeper * 1.5)),
+  },
+  {
     id: 'oxygen',
     text: 'Je zuurstof is onder de helft. Blauwe bunkers vullen je tank altijd bij.',
     when: (s) => s.oxygen < CONFIG.tips.lowOxygen,
@@ -72,7 +93,7 @@ export const TIPS: readonly Tip[] = [
   },
   {
     id: 'starmap',
-    text: 'Je motor is klaar. Houd E vast bij je schip om de sterrenkaart te openen en verder te reizen.',
+    text: 'Je motor is klaar. Houd E vast bij je schip en kies op de sterrenkaart je volgende planeet.',
     when: (s) => isRepaired(s),
   },
   {

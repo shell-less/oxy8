@@ -16,6 +16,7 @@ This file records what we decided and why. Update it when a decision changes, so
 | Oxygen | 100% on each landing | Supply bunkers (always, unlimited) | Passive drain (~3 minutes from full), creeper hits (25%), hazards |
 | Energy | 30 at the start of a new game, carried everywhere after that | Energy cells in supply bunkers (+35, once per bunker) | Installing a ship part (20), helmet lamp at night (~11 per night), every flight (10) |
 | Ship parts | 0 per planet | Parts bunkers (one each, once) | Installing into the ship's engine |
+| Scrap | 0, carried everywhere | 10 pieces lying on every planet, picked up by walking over them | Recipes on the ship's workbench |
 
 Food was considered and dropped: oxygen alone keeps the pressure on.
 
@@ -46,9 +47,21 @@ The ship still flies, but its engine is too weak for the next planet. The parts 
 
 Hold E at the ship: it installs a carried part when you have the energy, otherwise it opens the **star map**. The star map lists every planet with its status (here, visited, new, locked, unknown) and, for planets you have seen, how many **energy cells are left** there, so you can decide whether a trip back is worth the flight. Every flight costs 10 energy. After the last planet is repaired, the star map offers the way home, which ends the game.
 
-Planets keep their state: looted bunkers stay empty, taken energy cells stay gone, installed parts stay installed, and the explored minimap is remembered. Leftovers are energy cells for now; crafting parts will be added to them later.
+Planets keep their state: looted bunkers stay empty, taken energy cells and scrap stay gone, installed parts stay installed, and the explored minimap is remembered. Leftovers are energy cells and scrap.
 
 You always land in the morning next to the ship with a full oxygen tank.
+
+## Crafting
+
+Hold E at the ship to open the ship menu: the **workbench** on top, the star map below. Recipes cost scrap only, so energy stays the currency for travel and repairs.
+
+| Recipe | Scrap | Effect |
+| --- | --- | --- |
+| Zuurstoffles | 3 | Carry one. Q adds 40% oxygen anywhere. |
+| Lokbaken | 2 | Carry up to two. R places it; creepers within 120 px go for the beacon instead of you for 20 seconds. Jumpers pounce on it. |
+| Pakversterking | 6 | One-time upgrade. Creeper and meteor hits cost 40% less oxygen. |
+
+Scrap left on a planet counts as a leftover on the star map, next to energy cells. Scrap has its own seed, so adding it did not move anything on existing planets. Recipes live in `src/game/crafting.ts`, numbers in `CONFIG.crafting`.
 
 ## Saving and dying
 
@@ -68,9 +81,9 @@ No tutorial level and no manual. Short tips appear at the moment they become use
 2. ~~Port the mockup into modules with the same behaviour~~
 3. ~~Progression: star map, travel back to earlier planets, save progress in the browser~~
 4. ~~Tutorial: contextual tips, including the helmet lamp~~
-5. Crafting formulas for more complex objects
+5. ~~Crafting: scrap, workbench, oxygen bottle, decoy beacon, suit reinforcement~~
 6. Polish: sound, balance, title screen
 
 ## Open questions
 
-- Which crafting recipes come first, and do they need a new resource? Crafting parts will also count as leftovers on the star map.
+- More recipes later? Candidates: an efficient helmet lamp (half the energy), a bigger oxygen tank.

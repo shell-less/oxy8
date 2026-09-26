@@ -50,7 +50,7 @@ export function describe(state: GameState, target: Target | null): ActionInfo | 
     if (waiting) status = `Te weinig energie om in te bouwen (${cost} nodig)`;
     else if (isRepaired(state)) status = PLANETS[state.planetIndex + 1] ? 'Motor klaar voor de volgende planeet' : 'Motor klaar voor de reis naar huis';
     else status = `Motor mist nog ${needed - state.partsInstalled} onderdelen`;
-    return info(`${status} · [E] Sterrenkaart`, 'starmap', ia.starMapSeconds);
+    return info(`${status} · [E] Schip: werkbank en sterrenkaart`, 'starmap', ia.starMapSeconds);
   }
 
   const b = target.bunker;

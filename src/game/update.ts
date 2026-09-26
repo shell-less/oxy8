@@ -4,6 +4,7 @@ import type { InputState } from '../core/input';
 import { updateCreepers } from '../systems/creepers';
 import { updateHazards } from '../systems/hazards';
 import { updateInteraction } from '../systems/interaction';
+import { pickUpScrap, updateItems } from '../systems/items';
 import { movePlayer, revealAround } from '../systems/movement';
 import { updateLamp, updateOxygen } from '../systems/survival';
 import { isStranded } from './campaign';
@@ -23,6 +24,8 @@ export function step(state: GameState, input: InputState, dt: number): void {
   const moveX = busy ? 0 : input.moveX;
   const moveY = busy ? 0 : input.moveY;
   movePlayer(state, moveX, moveY, CONFIG.player.speed * mods.speedMultiplier, dt);
+  pickUpScrap(state);
+  updateItems(state, input, dt);
 
   updateOxygen(state, dt, mods.oxygenMultiplier, mods.extraOxygenPerSecond);
 

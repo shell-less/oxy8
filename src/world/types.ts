@@ -23,6 +23,14 @@ export interface Crystal extends Point {
 
 export interface Pool extends Point { rx: number; ry: number }
 
+/** A small piece of wreckage lying on the ground. Walk over it to pick it up. */
+export interface Scrap extends Point {
+  id: number;
+  taken: boolean;
+  /** Animation phase for the glint. */
+  phase: number;
+}
+
 export type CreeperMode = 'patrol' | 'chase' | 'return';
 
 /** Crawlers walk and chase; jumpers hop around and pounce on the player. */
@@ -72,6 +80,7 @@ export interface World {
   crystals: Crystal[];
   pools: Pool[];
   creepers: Creeper[];
+  scrap: Scrap[];
   /** Everything the player collides with. */
   solids: Circle[];
 }

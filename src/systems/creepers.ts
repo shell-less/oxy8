@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import type { GameState } from '../game/state';
+import type { Beacon, GameState } from '../game/state';
 import type { Creeper } from '../world/types';
 import { damagePlayer } from './survival';
 
@@ -16,6 +16,20 @@ export function updateCreepers(state: GameState, dt: number, aggroRange: number)
   }
 }
 
+/** The nearest working decoy beacon this creeper can sense, if any. Beacons beat the player. */
+function lureFor(state: GameState, c: Creeper): Beacon | null {
+  let best: Beacon | null = null;
+  let bestDist: number = CONFIG.crafting.beacon.range;
+  for (const b of state.beacons) {
+    const d = Math.hypot(b.x - c.x, b.y - c.y);
+    if (d < bestDist) {
+      bestDist = d;
+      best = b;
+    }
+  }
+  return best;
+}
+
 function routePoint(c: Creeper): { x: number; y: number } {
   return { x: c.cx + Math.cos(c.angle) * c.rx, y: c.cy + Math.sin(c.angle) * c.ry };
 }
@@ -29,7 +43,7 @@ function hurtPlayer(state: GameState, c: Creeper): void {
   const d = Math.hypot(dx, dy) || 1;
   p.kx = (dx / d) * CONFIG.player.knockback;
   p.ky = (dy / d) * CONFIG.player.knockback;
-  damagePlayer(state, CONFIG.oxygen.enemyHitDamage, `Pak gescheurd: -${CONFIG.oxygen.enemyHitDamage}% zuurstof`);
+  damagePlayer(state, CONFIG.oxygen.enemyHitDamage, 'Pak gescheurd');
 }
 
 function updateCrawler(state: GameState, c: Creeper, dt: number, aggroRange: number): void {
@@ -39,11 +53,21 @@ function updateCrawler(state: GameState, c: Creeper, dt: number, aggroRange: num
   const route = routePoint(c);
   const toPlayer = Math.hypot(p.x - c.x, p.y - c.y);
   const fromHome = Math.hypot(c.x - c.cx, c.y - c.cy);
+  const lure = lureFor(state, c);
+
+  const oldX = c.x;
+  if (lure) {
+    // Lured: walk to the beacon and stay there, whatever the leash says.
+    c.mode = 'chase';
+    if (Math.hypot(lure.x - c.x, lure.y - c.y) > 6) stepTowards(c, lure.x, lure.y, cfg.chaseSpeed * dt);
+    if (Math.abs(c.x - oldX) > 0.001) c.facing = c.x > oldX ? 1 : -1;
+    if (p.invulnerable <= 0 && toPlayer < cfg.hitRadius) hurtPlayer(state, c);
+    return;
+  }
 
   if (c.mode === 'patrol' && toPlayer < aggroRange && c.cooldown <= 0) c.mode = 'chase';
   else if (c.mode === 'chase' && (toPlayer > cfg.giveUpDistance || fromHome > cfg.leashDistance)) c.mode = 'return';
 
-  const oldX = c.x;
   if (c.mode === 'patrol') {
     c.x = route.x;
     c.y = route.y;
@@ -68,11 +92,11 @@ function updateJumper(state: GameState, c: Creeper, dt: number, aggroRange: numb
   switch (j.phase) {
     case 'rest': {
       const canPounce = c.mode !== 'return' && c.cooldown <= 0 && fromHome < CONFIG.enemies.leashDistance;
-      if (canPounce && toPlayer < aggroRange) {
+      if (lureFor(state, c) || (canPounce && toPlayer < aggroRange)) {
         j.phase = 'crouch';
         j.timer = J.crouchSeconds;
         c.mode = 'chase';
-        aimAtPlayer(state, c);
+        aim(state, c);
       } else if (j.timer <= 0) {
         startHop(c);
       }
@@ -80,7 +104,7 @@ function updateJumper(state: GameState, c: Creeper, dt: number, aggroRange: numb
     }
     case 'crouch':
       // The landing spot follows the player until the jump starts; then it is fixed and can be dodged.
-      aimAtPlayer(state, c);
+      aim(state, c);
       if (j.timer <= 0) startJump(c, 'pounce', j.toX, j.toY, J.pounceSeconds);
       break;
     case 'hop':
@@ -98,11 +122,12 @@ function updateJumper(state: GameState, c: Creeper, dt: number, aggroRange: numb
   }
 }
 
-function aimAtPlayer(state: GameState, c: Creeper): void {
+/** Aim the pounce at a beacon if one lures this jumper, otherwise at the player. */
+function aim(state: GameState, c: Creeper): void {
   const j = c.jump!;
-  const p = state.player;
-  const dx = p.x - c.x;
-  const dy = p.y - c.y;
+  const target = lureFor(state, c) ?? state.player;
+  const dx = target.x - c.x;
+  const dy = target.y - c.y;
   const d = Math.hypot(dx, dy) || 1;
   const reach = Math.min(d, CONFIG.enemies.jumper.pounceRange);
   j.toX = c.x + (dx / d) * reach;

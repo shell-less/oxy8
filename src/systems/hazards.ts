@@ -84,7 +84,7 @@ function updateMeteors(state: GameState, dt: number): HazardModifiers {
     const d = Math.hypot(p.x - m.x, p.y - m.y);
     if (d < 80) emit(state, { type: 'shake', amount: 0.12 + 0.2 * (1 - d / 80) });
     if (d < cfg.hitRadius && p.invulnerable <= 0) {
-      damagePlayer(state, cfg.damage, `Meteorietinslag: -${cfg.damage}% zuurstof`);
+      damagePlayer(state, cfg.damage, 'Meteorietinslag');
     }
   }
   h.meteors = h.meteors.filter((m) => m.timeLeft > 0);
