@@ -1,11 +1,14 @@
 import './style.css';
-import { CONFIG } from './config';
 import { Keyboard } from './core/input';
-import { hasNextPlanet, landOn, type GameState } from './game/state';
+import { unlockIfRepaired } from './game/campaign';
+import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
+import { landOn, type GameState } from './game/state';
+import { travel, type Destination } from './game/travel';
 import { step } from './game/update';
 import { Hud } from './render/hud';
 import { Minimap } from './render/minimap';
 import { Renderer } from './render/renderer';
+import { StarMap } from './render/starmap';
 import { PLANETS } from './world/planets';
 
 const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -16,74 +19,159 @@ const renderer = new Renderer(canvas.getContext('2d')!);
 const minimap = new Minimap(byId<HTMLCanvasElement>('minimap'));
 const hud = new Hud();
 const keyboard = new Keyboard();
+const starMap = new StarMap(pickDestination, resume);
 
 const params = new URLSearchParams(location.search);
 const debug = import.meta.env.DEV || params.has('debug');
-const requested = Number(params.get('planet')) || 1;
-/** In debug mode ?planet=2 starts on the second planet. */
-const startPlanet = debug ? Math.min(PLANETS.length - 1, Math.max(0, requested - 1)) : 0;
 
-let state: GameState = landOn(startPlanet);
-/** Energy on arrival, so a retry after dying starts from the same point. */
-let arrivalEnergy = state.energy;
+let state: GameState = landOn(0);
+/** Snapshot taken on landing. Dying rolls back to it. */
+let checkpoint: SaveData = toSaveData(state);
 let running = false;
-/** What clicking the overlay does next. */
-let onContinue: () => void = () => start();
+/** The primary overlay button; Enter and Space press it. */
+let primaryAction: (() => void) | null = null;
 
-function showOverlay(title: string, hazard: string, sub: string, next: () => void): void {
+interface OverlayButton { label: string; action: () => void }
+
+function showOverlay(title: string, hazard: string, sub: string, buttons: OverlayButton[]): void {
   byId('overlay-title').textContent = title;
   byId('overlay-hazard').textContent = hazard;
   byId('overlay-sub').textContent = sub;
+  const actions = byId('overlay-actions');
+  actions.replaceChildren(...buttons.map((b, i) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = i === 0 ? 'btn primary' : 'btn';
+    el.textContent = b.label;
+    el.addEventListener('click', b.action);
+    return el;
+  }));
+  primaryAction = buttons[0]?.action ?? null;
   overlay.hidden = false;
   running = false;
-  onContinue = next;
 }
 
+function hideOverlay(): void {
+  overlay.hidden = true;
+  primaryAction = null;
+}
+
+function save(): void {
+  writeSave({ live: toSaveData(state), checkpoint });
+}
+
+/** Briefing before walking out of the ship. Shows the hazard on a first visit. */
 function briefing(): void {
   const planet = state.world.planet;
+  const firstVisit = state.campaign.planets[state.planetIndex] === null;
+  const sub = state.partsInstalled >= planet.partsNeeded
+    ? 'De motor is hier al gerepareerd.'
+    : `Vind ${planet.partsNeeded - state.partsInstalled} scheepsonderdelen voor een sterkere motor.`;
   showOverlay(
     `Planeet ${state.planetIndex + 1} · ${planet.name}`,
     `${planet.theme.hazardName}: ${planet.theme.hazardDescription}`,
-    `Vind ${planet.partsNeeded} scheepsonderdelen. Klik om te landen.`,
-    start,
+    firstVisit ? sub : `Terug op ${planet.name}. ${sub}`,
+    [{ label: 'Landen', action: start }],
   );
 }
 
 function start(): void {
-  overlay.hidden = true;
+  hideOverlay();
   running = true;
-  hud.showToast(`Geland op ${state.world.planet.name}. Let op: ${state.world.planet.theme.hazardName.toLowerCase()}`);
+  const planet = state.world.planet;
+  hud.showToast(`Geland op ${planet.name}. Let op: ${planet.theme.hazardName.toLowerCase()}`);
   canvas.focus();
 }
 
-function travelTo(index: number, energy: number): void {
-  state = landOn(index, { energy });
-  arrivalEnergy = energy;
+function resume(): void {
+  running = true;
+  canvas.focus();
+}
+
+/** Makes the given state current, as a fresh landing: new checkpoint, saved. */
+function arrive(next: GameState): void {
+  state = next;
+  checkpoint = toSaveData(state);
+  save();
   briefing();
 }
 
-function checkStatus(): void {
-  if (state.status === 'dead') {
-    showOverlay('Zuurstof op', '', 'Je pak is leeg. Klik om opnieuw te landen.', () => {
-      travelTo(state.planetIndex, arrivalEnergy);
+function pickDestination(index: number, row: Destination): void {
+  const result = travel(state, index);
+  if (!result.ok) {
+    hud.showToast(row.note || result.reason);
+    return;
+  }
+  starMap.hide();
+  if (result.state.status === 'escaped') {
+    state = result.state;
+    clearSave();
+    showOverlay('Thuis', '', 'Je motor bracht je helemaal naar huis. Je bent ontsnapt.', [{ label: 'Nieuw spel', action: newGame }]);
+    return;
+  }
+  arrive(result.state);
+}
+
+function newGame(): void {
+  clearSave();
+  arrive(landOn(0));
+}
+
+function confirmNewGame(): void {
+  showOverlay('Nieuw spel', '', 'Je huidige voortgang gaat verloren.', [
+    { label: 'Nieuw spel starten', action: newGame },
+    { label: 'Terug', action: title },
+  ]);
+}
+
+function title(): void {
+  const saved = readSave();
+  if (!saved) {
+    arrive(landOn(0));
+    return;
+  }
+  const planet = PLANETS[saved.live.planetIndex];
+  showOverlay('Oxy8', '', `Opgeslagen spel op ${planet.name}.`, [
+    { label: 'Verder spelen', action: () => {
+      checkpoint = saved.checkpoint;
+      state = fromSaveData(saved.live);
+      briefing();
+    } },
+    { label: 'Nieuw spel', action: confirmNewGame },
+  ]);
+}
+
+function onDeath(): void {
+  showOverlay('Zuurstof op', '', `Je pak is leeg. Je begint opnieuw op ${state.world.planet.name}, zoals je hier landde.`, [
+    { label: 'Opnieuw landen', action: () => {
+      state = fromSaveData(checkpoint);
+      save();
       start();
-    });
-  } else if (state.status === 'launched') {
-    if (hasNextPlanet(state)) {
-      const next = PLANETS[state.planetIndex + 1];
-      const energy = state.energy;
-      showOverlay('Schip gerepareerd', '', `Op naar ${next.name}. Klik om verder te gaan.`, () => travelTo(state.planetIndex + 1, energy));
-    } else {
-      showOverlay('Ontsnapt', '', 'Je hebt alle planeten gehaald. Klik om opnieuw te beginnen.', () => travelTo(0, CONFIG.player.startEnergy));
-    }
+    } },
+  ]);
+}
+
+/** Handles events meant for the app rather than the renderer. */
+function handleAppEvents(): void {
+  let progressed = false;
+  let openMap = false;
+  for (const e of state.events) {
+    if (e.type === 'progress') progressed = true;
+    if (e.type === 'starmap') openMap = true;
+  }
+  if (progressed) save();
+  if (openMap) {
+    running = false;
+    starMap.open(state);
   }
 }
 
-overlay.addEventListener('click', () => onContinue());
 window.addEventListener('keydown', (e) => {
-  if (!overlay.hidden && (e.code === 'Enter' || e.code === 'Space')) {
+  if (!overlay.hidden && primaryAction && (e.code === 'Enter' || e.code === 'Space')) {
+    // Let a focused button handle its own activation.
+    if (document.activeElement instanceof HTMLButtonElement) return;
     e.preventDefault();
-    onContinue();
+    primaryAction();
   }
 });
 
@@ -95,13 +183,20 @@ if (debug) {
     timeBtn.textContent = state.timeScale === 1 ? 'Tijd x20' : 'Tijd normaal';
     canvas.focus();
   });
-  byId('dbg-next').addEventListener('click', () => {
-    travelTo((state.planetIndex + 1) % PLANETS.length, state.energy);
-    timeBtn.textContent = 'Tijd x20';
+  byId('dbg-repair').addEventListener('click', () => {
+    state.partsCarried = state.partsInstalled = state.world.planet.partsNeeded;
+    unlockIfRepaired(state);
+    save();
+    hud.showToast('Debug: motor gerepareerd');
+    canvas.focus();
+  });
+  byId('dbg-energy').addEventListener('click', () => {
+    state.energy = Math.min(100, state.energy + 50);
+    canvas.focus();
   });
 }
 
-briefing();
+title();
 
 let last = performance.now();
 let t = 0;
@@ -112,7 +207,8 @@ function frame(now: number): void {
   const input = keyboard.poll();
   if (running) {
     step(state, input, dt);
-    checkStatus();
+    handleAppEvents();
+    if (state.status === 'dead') onDeath();
   }
   for (const text of renderer.consumeEvents(state)) hud.showToast(text);
   renderer.update(state, dt);

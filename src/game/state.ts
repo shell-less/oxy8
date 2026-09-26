@@ -3,20 +3,25 @@ import { createRng, deriveSeed, type Rng } from '../core/rng';
 import { generateWorld } from '../world/generate';
 import { PLANETS } from '../world/planets';
 import type { Bunker, World } from '../world/types';
+import { applyProgress, newCampaign, type Campaign } from './campaign';
 
 /**
- * Things that happened during a step which the presentation layer should show:
- * toasts, particles, screen shake. Systems push events, the renderer drains them.
- * This keeps game logic free of any drawing code, and easy to test.
+ * Things that happened during a step which the presentation layer should react to:
+ * toasts, particles, screen shake, saving, opening the star map. Systems push events,
+ * main.ts and the renderer handle them. This keeps game logic free of UI code, and easy to test.
  */
 export type GameEvent =
   | { type: 'toast'; text: string }
   | { type: 'burst'; x: number; y: number; color: string; count: number }
   | { type: 'shake'; amount: number }
   | { type: 'hurt' }
-  | { type: 'crater'; x: number; y: number };
+  | { type: 'crater'; x: number; y: number }
+  /** Something worth saving happened (loot, install). */
+  | { type: 'progress' }
+  /** The player asked the ship for the star map. */
+  | { type: 'starmap' };
 
-export type Status = 'playing' | 'dead' | 'launched';
+export type Status = 'playing' | 'dead' | 'escaped';
 
 export interface Player {
   x: number;
@@ -61,8 +66,11 @@ export interface GameState {
   player: Player;
   oxygen: number;
   energy: number;
+  /** Parts found on this planet and not yet installed count as carried. */
   partsCarried: number;
   partsInstalled: number;
+  /** Progress on all planets, and how far the engine reaches. The current planet's entry is stale until captured. */
+  campaign: Campaign;
   /** Seconds since 00:00 on day 1. */
   time: number;
   /** Debug only: speeds up the day clock. */
@@ -78,17 +86,21 @@ export interface GameState {
   events: GameEvent[];
 }
 
-export interface CarryOver {
-  energy: number;
+export interface LandingOptions {
+  energy?: number;
+  campaign?: Campaign;
 }
 
-/** Land on a planet. Oxygen is refilled by the ship; energy carries over between planets. */
-export function landOn(planetIndex: number, carry?: CarryOver): GameState {
+/**
+ * Land on a planet next to the ship, in the morning, with a full oxygen tank.
+ * If the campaign has progress for this planet, the world is restored: empty bunkers stay empty.
+ */
+export function landOn(planetIndex: number, options: LandingOptions = {}): GameState {
   const planet = PLANETS[planetIndex];
   if (!planet) throw new Error(`Unknown planet index ${planetIndex}`);
   const world = generateWorld(planet);
-  const { hazards } = CONFIG;
-  return {
+  const campaign = options.campaign ?? newCampaign();
+  const state: GameState = {
     planetIndex,
     world,
     player: {
@@ -103,15 +115,16 @@ export function landOn(planetIndex: number, carry?: CarryOver): GameState {
       leak: 0,
     },
     oxygen: CONFIG.player.startOxygen,
-    energy: carry?.energy ?? CONFIG.player.startEnergy,
+    energy: options.energy ?? CONFIG.player.startEnergy,
     partsCarried: 0,
     partsInstalled: 0,
+    campaign,
     time: (CONFIG.day.startHour / 24) * CONFIG.day.lengthSeconds,
     timeScale: 1,
     lamp: true,
     hazards: {
       storm: 0,
-      stormNext: hazards.storm.firstAfter,
+      stormNext: CONFIG.hazards.storm.firstAfter,
       stormWarned: false,
       meteorTimer: 4,
       meteors: [],
@@ -124,12 +137,16 @@ export function landOn(planetIndex: number, carry?: CarryOver): GameState {
     rng: createRng(deriveSeed(planet.seed, 2)),
     events: [],
   };
+  const progress = campaign.planets[planetIndex];
+  if (progress) applyProgress(state, progress);
+  return state;
 }
 
 export function emit(state: GameState, event: GameEvent): void {
   state.events.push(event);
 }
 
-export function hasNextPlanet(state: GameState): boolean {
-  return state.planetIndex + 1 < PLANETS.length;
+/** True when every part for this planet's engine upgrade is installed. */
+export function isRepaired(state: GameState): boolean {
+  return state.partsInstalled >= state.world.planet.partsNeeded;
 }

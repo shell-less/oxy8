@@ -23,8 +23,6 @@ export function step(state: GameState, input: InputState, dt: number): void {
   const moveY = busy ? 0 : input.moveY;
   movePlayer(state, moveX, moveY, CONFIG.player.speed * mods.speedMultiplier, dt);
 
-  if (state.status !== 'playing') return; // launched during interaction
-
   updateOxygen(state, dt, mods.oxygenMultiplier, mods.extraOxygenPerSecond);
 
   const hiddenInDark = darkness > 0.3 && !state.lamp;
