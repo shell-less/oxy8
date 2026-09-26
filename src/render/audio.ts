@@ -29,6 +29,11 @@ export class SoundBoard {
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
 
+  /** The audio context and master output, once audio is unlocked. Music plugs in here. */
+  output(): { ctx: AudioContext; master: GainNode } | null {
+    return this.ctx && this.master ? { ctx: this.ctx, master: this.master } : null;
+  }
+
   setMuted(muted: boolean): void {
     this.muted = muted;
     try {

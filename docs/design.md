@@ -93,6 +93,10 @@ An animated scene drawn in the same 320x180 pixel style (`src/render/title.ts`):
 
 All sound is synthesised with Web Audio in `src/render/audio.ts`: no audio files. Systems emit `{ type: 'sound', name }` events; the sound board turns them into short retro effects. Continuous sounds: wind during sandstorms and a warning beep below 25% oxygen (faster below 10%). M or the title screen switches sound off; the choice is remembered.
 
+## Music
+
+Background music is generated live too (`src/render/music.ts`): a soft pad, a bass note and a sparse arpeggio with echo, looping over a four-chord progression. Every mood has its own key, scale and tempo: the title (D minor, wide), Kepler-442 (A dorian, a bit of drive), Nereid-117 (E minor, slow and glassy), Umbra-9 (C phrygian, eerie) and Viridia (G minor, restless). Music crossfades when you land somewhere else, gets darker at night and softer in menus. N or the title screen switches music off; M still mutes everything.
+
 ## Roadmap
 
 1. ~~Project setup: Vite, TypeScript, CI, GitHub Pages~~

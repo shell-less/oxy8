@@ -1,4 +1,6 @@
+import { CONFIG } from './config';
 import './style.css';
+import { darknessAt, hourOf } from './core/clock';
 import { Keyboard } from './core/input';
 import { unlockIfRepaired } from './game/campaign';
 import { craft } from './game/crafting';
@@ -7,6 +9,7 @@ import { landOn, type GameState } from './game/state';
 import { travel, type Destination } from './game/travel';
 import { step } from './game/update';
 import { SoundBoard } from './render/audio';
+import { Music } from './render/music';
 import { Hud } from './render/hud';
 import { Minimap } from './render/minimap';
 import { Renderer } from './render/renderer';
@@ -33,6 +36,7 @@ const starMap = new StarMap(pickDestination, resume, (id) => {
 });
 const tips = new Tips();
 const sound = new SoundBoard();
+const music = new Music();
 // Browsers only allow audio after the player did something.
 window.addEventListener('pointerdown', () => sound.unlock());
 window.addEventListener('keydown', () => sound.unlock());
@@ -88,6 +92,7 @@ function save(): void {
 /** Briefing before walking out of the ship. Shows the hazard on a first visit. */
 function briefing(): void {
   const planet = state.world.planet;
+  music.setMood(planet.theme.id);
   const firstVisit = state.campaign.planets[state.planetIndex] === null;
   const sub = state.partsInstalled >= planet.partsNeeded
     ? 'De motor is hier al gerepareerd.'
@@ -154,6 +159,14 @@ function confirmNewGame(): void {
 /** Title screen: continue a saved game, start a new one, switch tips on or off. */
 function title(): void {
   const saved = readSave();
+  music.setMood('title');
+  const musicButton: OverlayButton = {
+    label: music.enabled ? 'Muziek: aan' : 'Muziek: uit',
+    action: () => {
+      music.setEnabled(!music.enabled);
+      title();
+    },
+  };
   const soundButton: OverlayButton = {
     label: sound.muted ? 'Geluid: uit' : 'Geluid: aan',
     action: () => {
@@ -173,6 +186,7 @@ function title(): void {
       { label: 'Nieuw spel', action: newGame },
       tipsButton,
       soundButton,
+      musicButton,
     ]);
     titleTheme = PLANETS[0].theme;
     setTitleMode(true);
@@ -188,6 +202,7 @@ function title(): void {
     { label: 'Nieuw spel', action: confirmNewGame },
     tipsButton,
     soundButton,
+    musicButton,
   ]);
   titleTheme = planet.theme;
   setTitleMode(true);
@@ -229,6 +244,11 @@ function handleAppEvents(): void {
 }
 
 window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyN' && !e.repeat) {
+    music.setEnabled(!music.enabled);
+    hud.showToast(music.enabled ? 'Muziek aan' : 'Muziek uit');
+    return;
+  }
   if (e.code === 'KeyM' && !e.repeat) {
     sound.setMuted(!sound.muted);
     hud.showToast(sound.muted ? 'Geluid uit' : 'Geluid aan');
@@ -245,7 +265,7 @@ window.addEventListener('keydown', (e) => {
 if (debug) {
   byId('debug').hidden = false;
   // For poking around in the browser console: oxy8.state()
-  Object.assign(window, { oxy8: { state: () => state } });
+  Object.assign(window, { oxy8: { state: () => state, sound, music } });
   const timeBtn = byId<HTMLButtonElement>('dbg-time');
   timeBtn.addEventListener('click', () => {
     state.timeScale = state.timeScale === 1 ? 20 : 1;
@@ -288,6 +308,9 @@ function frame(now: number): void {
   tips.update(state, dt, running);
   sound.handle(state.events);
   sound.update(state, dt, running);
+  const out = sound.output();
+  if (out) music.attach(out.ctx, out.master);
+  music.update(titleMode ? 0 : darknessAt(hourOf(state.time)) / CONFIG.day.maxDarkness, !running && !titleMode);
   for (const text of renderer.consumeEvents(state)) hud.showToast(text);
   renderer.update(state, dt);
   if (titleMode) titleScene.draw(dt, titleTheme);
