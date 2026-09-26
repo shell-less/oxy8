@@ -10,6 +10,7 @@ export function pickUpScrap(state: GameState): void {
     s.taken = true;
     state.inventory.scrap++;
     emit(state, { type: 'burst', x: s.x, y: s.y - 2, color: '#d8e0e8', count: 8 });
+    emit(state, { type: 'sound', name: 'pickup' });
     emit(state, { type: 'toast', text: `Schroot opgepakt (${state.inventory.scrap})` });
     emit(state, { type: 'progress' });
   }
@@ -24,12 +25,14 @@ export function updateItems(state: GameState, input: InputState, dt: number): vo
   if (input.useBottle) {
     if (inv.bottles <= 0) {
       emit(state, { type: 'toast', text: 'Je hebt geen zuurstoffles. Maak er een bij je schip' });
+      emit(state, { type: 'sound', name: 'deny' });
     } else if (state.oxygen >= 99) {
       emit(state, { type: 'toast', text: 'Je zuurstoftank is vol' });
     } else {
       inv.bottles--;
       state.oxygen = Math.min(100, state.oxygen + c.bottle.oxygen);
       emit(state, { type: 'burst', x: p.x, y: p.y - 10, color: '#4fd8ff', count: 14 });
+      emit(state, { type: 'sound', name: 'bottle' });
       emit(state, { type: 'toast', text: `Zuurstoffles gebruikt: +${c.bottle.oxygen}%` });
       emit(state, { type: 'progress' });
     }
@@ -38,10 +41,12 @@ export function updateItems(state: GameState, input: InputState, dt: number): vo
   if (input.placeBeacon) {
     if (inv.beacons <= 0) {
       emit(state, { type: 'toast', text: 'Je hebt geen lokbaken. Maak er een bij je schip' });
+      emit(state, { type: 'sound', name: 'deny' });
     } else {
       inv.beacons--;
       state.beacons.push({ x: p.x + p.facing * 6, y: p.y + 2, timeLeft: c.beacon.lifetime });
       emit(state, { type: 'toast', text: 'Lokbaken geplaatst' });
+      emit(state, { type: 'sound', name: 'beacon' });
       emit(state, { type: 'progress' });
     }
   }

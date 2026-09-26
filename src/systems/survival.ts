@@ -14,6 +14,7 @@ export function damagePlayer(state: GameState, amount: number, label: string): v
   p.leak = Math.max(p.leak, dealt >= 20 ? 3 : 2);
   emit(state, { type: 'toast', text: `${label}: -${dealt}% zuurstof` });
   emit(state, { type: 'hurt' });
+  emit(state, { type: 'sound', name: 'hurt' });
   emit(state, { type: 'shake', amount: 0.35 });
   emit(state, { type: 'burst', x: p.x, y: p.y - 8, color: '#dff6ff', count: 18 });
 }
@@ -25,6 +26,7 @@ export function updateLamp(state: GameState, input: InputState, darkness: number
       emit(state, { type: 'toast', text: 'Geen energie voor de lamp' });
     } else {
       state.lamp = !state.lamp;
+      emit(state, { type: 'sound', name: 'lamp' });
       emit(state, { type: 'toast', text: state.lamp ? 'Helmlamp aan' : 'Helmlamp uit' });
     }
   }

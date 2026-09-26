@@ -75,6 +75,10 @@ Dying rolls back to the moment you landed on the current planet: the planet, you
 
 No tutorial level and no manual. Short tips appear at the moment they become useful, one at a time at the top of the screen, each only once per browser: how to walk, what the bunkers are, that creepers cannot be beaten, where to take a part, what to do when oxygen runs low, the helmet lamp at dusk and without lamp at night, the star map once the engine is ready, and leftovers on earlier planets. The tips live in `src/game/tutorial.ts` in priority order. The title screen can switch them off; a new game does not repeat tips already seen.
 
+## Sound
+
+All sound is synthesised with Web Audio in `src/render/audio.ts`: no audio files. Systems emit `{ type: 'sound', name }` events; the sound board turns them into short retro effects. Continuous sounds: wind during sandstorms and a warning beep below 25% oxygen (faster below 10%). M or the title screen switches sound off; the choice is remembered.
+
 ## Roadmap
 
 1. ~~Project setup: Vite, TypeScript, CI, GitHub Pages~~
@@ -82,7 +86,7 @@ No tutorial level and no manual. Short tips appear at the moment they become use
 3. ~~Progression: star map, travel back to earlier planets, save progress in the browser~~
 4. ~~Tutorial: contextual tips, including the helmet lamp~~
 5. ~~Crafting: scrap, workbench, oxygen bottle, decoy beacon, suit reinforcement~~
-6. Polish: sound, balance, title screen
+6. Polish: ~~sound~~, balance, title screen
 
 ## Open questions
 

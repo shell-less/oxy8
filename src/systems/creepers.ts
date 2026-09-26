@@ -105,7 +105,10 @@ function updateJumper(state: GameState, c: Creeper, dt: number, aggroRange: numb
     case 'crouch':
       // The landing spot follows the player until the jump starts; then it is fixed and can be dodged.
       aim(state, c);
-      if (j.timer <= 0) startJump(c, 'pounce', j.toX, j.toY, J.pounceSeconds);
+      if (j.timer <= 0) {
+        startJump(c, 'pounce', j.toX, j.toY, J.pounceSeconds);
+        state.events.push({ type: 'sound', name: 'pounce' });
+      }
       break;
     case 'hop':
     case 'pounce': {
@@ -169,7 +172,10 @@ function land(state: GameState, c: Creeper): void {
   c.x = j.toX;
   c.y = j.toY;
   j.z = 0;
-  if (pounced) state.events.push({ type: 'burst', x: c.x, y: c.y, color: state.world.planet.theme.dust, count: 8 });
+  if (pounced) {
+    state.events.push({ type: 'burst', x: c.x, y: c.y, color: state.world.planet.theme.dust, count: 8 });
+    state.events.push({ type: 'sound', name: 'land' });
+  }
 
   if (p.invulnerable <= 0 && Math.hypot(p.x - c.x, p.y - c.y) < CONFIG.enemies.jumper.hitRadius) {
     hurtPlayer(state, c);

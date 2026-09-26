@@ -19,7 +19,14 @@ export type GameEvent =
   /** Something worth saving happened (loot, install). */
   | { type: 'progress' }
   /** The player asked the ship for the star map. */
-  | { type: 'starmap' };
+  | { type: 'starmap' }
+  /** A sound effect. The audio layer decides what it sounds like. */
+  | { type: 'sound'; name: SoundName };
+
+export type SoundName =
+  | 'pickup' | 'part' | 'supply' | 'install' | 'repaired' | 'craft'
+  | 'hurt' | 'bottle' | 'beacon' | 'deny' | 'lamp'
+  | 'pounce' | 'land' | 'storm-warning';
 
 /** 'stranded': too little energy to fly and no energy cells left on this planet. The game is over. */
 export type Status = 'playing' | 'dead' | 'stranded' | 'escaped';

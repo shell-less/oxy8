@@ -61,6 +61,7 @@ export function craft(state: GameState, id: RecipeId): CraftCheck {
   else if (id === 'beacon') inv.beacons++;
   else inv.armour = true;
   emit(state, { type: 'toast', text: `${recipe.name} gemaakt` });
+  emit(state, { type: 'sound', name: 'craft' });
   emit(state, { type: 'progress' });
   return check;
 }

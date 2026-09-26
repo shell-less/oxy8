@@ -109,6 +109,7 @@ function perform(state: GameState, target: Target, action: Action): void {
     state.energy -= CONFIG.energy.installCost;
     emit(state, { type: 'burst', x: ship.x - 13 + (state.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });
     const unlocked = unlockIfRepaired(state);
+    emit(state, { type: 'sound', name: unlocked ? 'repaired' : 'install' });
     emit(state, {
       type: 'toast',
       text: unlocked
@@ -124,6 +125,7 @@ function perform(state: GameState, target: Target, action: Action): void {
     b.looted = true;
     state.partsCarried++;
     emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#ffb347', count: 20 });
+    emit(state, { type: 'sound', name: 'part' });
     emit(state, { type: 'toast', text: `Scheepsonderdeel gevonden (${state.partsCarried}/${needed})` });
     emit(state, { type: 'progress' });
     return;
@@ -137,6 +139,7 @@ function perform(state: GameState, target: Target, action: Action): void {
     text += `, energiecel +${CONFIG.energy.cellAmount}`;
   }
   emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#4fd8ff', count: 16 });
+  emit(state, { type: 'sound', name: 'supply' });
   emit(state, { type: 'toast', text });
   emit(state, { type: 'progress' });
 }

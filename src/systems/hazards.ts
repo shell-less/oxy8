@@ -44,6 +44,7 @@ function updateStorm(state: GameState, dt: number): HazardModifiers {
     if (h.stormNext <= cfg.warnBefore && !h.stormWarned) {
       h.stormWarned = true;
       emit(state, { type: 'toast', text: 'Zandstorm op komst' });
+      emit(state, { type: 'sound', name: 'storm-warning' });
     }
     if (h.stormNext <= 0) {
       h.storm = cfg.duration;
