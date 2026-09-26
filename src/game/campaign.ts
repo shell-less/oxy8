@@ -79,6 +79,14 @@ export function unlockIfRepaired(state: GameState): boolean {
   return true;
 }
 
+/**
+ * No way forward: not enough energy to fly (and so also not to install), and no energy cells
+ * left on this planet to change that.
+ */
+export function isStranded(state: GameState): boolean {
+  return state.energy < flightCost() && !state.world.bunkers.some((b) => b.energyCell);
+}
+
 export function flightCost(): number {
   return CONFIG.energy.flightCost;
 }

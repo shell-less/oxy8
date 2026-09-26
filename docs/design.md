@@ -54,6 +54,8 @@ The game saves itself in the browser (localStorage) on every landing and after e
 
 Dying rolls back to the moment you landed on the current planet: the planet, your energy and your progress there are restored to that point.
 
+**Stranded is game over.** With less energy than a flight costs and no energy cells left on the current planet, the ship can never leave. The game ends and the save is removed. Energy is the long-term resource: spending it on the lamp or on trips back is a real choice.
+
 ## Roadmap
 
 1. ~~Project setup: Vite, TypeScript, CI, GitHub Pages~~
@@ -66,4 +68,3 @@ Dying rolls back to the moment you landed on the current planet: the planet, you
 ## Open questions
 
 - Which crafting recipes come first, and do they need a new resource? Crafting parts will also count as leftovers on the star map.
-- A player with less than 10 energy and no energy cells left on the current planet cannot fly anywhere. Only "Nieuw spel" gets them out. Do we need an emergency option?
