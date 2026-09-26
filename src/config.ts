@@ -38,6 +38,8 @@ export const CONFIG = {
     lampPerSecond: 0.12,
     installCost: 20,
     cellAmount: 35,
+    /** Every flight between planets, forward or back. */
+    flightCost: 10,
   },
 
   interaction: {
@@ -46,7 +48,7 @@ export const CONFIG = {
     openPartsSeconds: 1.1,
     openSupplySeconds: 0.9,
     installSeconds: 1.6,
-    launchSeconds: 1.2,
+    starMapSeconds: 0.4,
   },
 
   enemies: {

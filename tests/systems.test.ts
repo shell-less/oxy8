@@ -130,7 +130,7 @@ describe('bunkers and ship', () => {
     expect(s.energy).toBe(CONFIG.player.startEnergy + CONFIG.energy.cellAmount);
   });
 
-  it('installing costs energy and a complete ship can launch', () => {
+  it('installing costs energy and completing the engine unlocks the next planet', () => {
     const s = landOn(0);
     removeCreepers(s);
     s.partsCarried = s.world.planet.partsNeeded;
@@ -142,8 +142,9 @@ describe('bunkers and ship', () => {
     }
     expect(s.partsInstalled).toBe(s.world.planet.partsNeeded);
     expect(s.energy).toBe(100 - s.world.planet.partsNeeded * CONFIG.energy.installCost);
+    expect(s.campaign.unlocked).toBe(1);
     run(s, 2, hold);
-    expect(s.status).toBe('launched');
+    expect(s.events.some((e) => e.type === 'starmap')).toBe(true);
   });
 
   it('refuses to install without enough energy', () => {
@@ -153,9 +154,10 @@ describe('bunkers and ship', () => {
     s.energy = 5;
     standAt(s, s.world.ship.x, s.world.ship.y + 20);
     step(s, NO_INPUT, DT);
-    expect(describeAction(s, s.interaction.target)?.available).toBe(false);
+    expect(describeAction(s, s.interaction.target)?.action).toBe('starmap');
     run(s, 3, hold);
     expect(s.partsInstalled).toBe(0);
+    expect(s.energy).toBe(5);
   });
 });
 

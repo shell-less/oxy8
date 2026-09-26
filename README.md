@@ -9,11 +9,14 @@ A small pixel-art space survival game for the browser. You crash on a planet, yo
 | Key | Action |
 | --- | --- |
 | WASD or arrow keys | Walk |
-| E (hold) | Open a bunker, install a part, launch |
+| E (hold) | Open a bunker, install a part, open the star map at the ship |
+| 1-9, Esc | Pick a destination on the star map, close it |
 | F | Helmet lamp on or off |
 | Enter or Space | Continue from a menu screen |
 
-Keep your oxygen above zero. Supply bunkers (blue) always refill oxygen and sometimes hold a one-time energy cell (yellow light). Parts bunkers (orange stripes) hold one ship part each. Installing a part costs energy, and so does the helmet lamp at night. Creepers cannot be killed: a hit tears your suit for 25% oxygen.
+Keep your oxygen above zero. Supply bunkers (blue) always refill oxygen and sometimes hold a one-time energy cell (yellow light). Parts bunkers (orange stripes) hold one ship part each. Install all parts of a planet to make the engine strong enough for the next one. Installing costs energy, and so do the helmet lamp at night and every flight. The star map shows how many energy cells are left on planets you visited, so you can fly back for them. Creepers cannot be killed: a hit tears your suit for 25% oxygen.
+
+The game saves itself in your browser.
 
 Each planet has its own hazard: sandstorms, freezing nights, meteor showers, and (on a later planet) toxic pools.
 
@@ -29,7 +32,7 @@ npm run typecheck
 npm run build      # production build in dist/
 ```
 
-Add `?debug` to the URL to show debug buttons (fast clock, skip planet). With `?debug&planet=2` you start on planet 2. The dev server always shows them.
+Add `?debug` to the URL to show debug buttons: fast clock, repair the engine instantly, +50 energy. The dev server always shows them.
 
 Every push to `main` is tested, built and deployed to GitHub Pages. Pull requests run the same checks.
 

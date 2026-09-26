@@ -1,8 +1,13 @@
 import { CONFIG } from '../config';
 import type { InputState } from '../core/input';
-import { emit, type GameState, type Target } from '../game/state';
+import { unlockIfRepaired } from '../game/campaign';
+import { emit, isRepaired, type GameState, type Target } from '../game/state';
+import { PLANETS } from '../world/planets';
+
+export type Action = 'install' | 'starmap' | 'open' | 'none';
 
 export interface ActionInfo {
+  action: Action;
   /** Prompt shown at the bottom of the screen. */
   text: string;
   /** False when the prompt is only informational. */
@@ -33,24 +38,27 @@ export function describe(state: GameState, target: Target | null): ActionInfo | 
   if (!target) return null;
   const ia = CONFIG.interaction;
   const needed = state.world.planet.partsNeeded;
-  const info = (text: string, available = false, duration = 0): ActionInfo => ({ text, available, duration });
+  const info = (text: string, action: Action = 'none', duration = 0): ActionInfo => ({
+    text, action, available: action !== 'none', duration,
+  });
 
   if (target.kind === 'ship') {
-    if (state.partsInstalled >= needed) return info('[E] Lanceren', true, ia.launchSeconds);
-    if (state.partsCarried > state.partsInstalled) {
-      const cost = CONFIG.energy.installCost;
-      if (state.energy < cost) return info(`Te weinig energie (${cost} nodig)`);
-      return info(`[E] Onderdeel inbouwen (-${cost} energie)`, true, ia.installSeconds);
-    }
-    return info(`Schip mist nog ${needed - state.partsInstalled} onderdelen`);
+    const cost = CONFIG.energy.installCost;
+    const waiting = state.partsCarried > state.partsInstalled;
+    if (waiting && state.energy >= cost) return info(`[E] Onderdeel inbouwen (-${cost} energie)`, 'install', ia.installSeconds);
+    let status: string;
+    if (waiting) status = `Te weinig energie om in te bouwen (${cost} nodig)`;
+    else if (isRepaired(state)) status = PLANETS[state.planetIndex + 1] ? 'Motor klaar voor de volgende planeet' : 'Motor klaar voor de reis naar huis';
+    else status = `Motor mist nog ${needed - state.partsInstalled} onderdelen`;
+    return info(`${status} · [E] Sterrenkaart`, 'starmap', ia.starMapSeconds);
   }
 
   const b = target.bunker;
   if (b.kind === 'parts') {
-    return b.looted ? info('Bunker is leeg') : info('[E] Onderdelenbunker openen', true, ia.openPartsSeconds);
+    return b.looted ? info('Bunker is leeg') : info('[E] Onderdelenbunker openen', 'open', ia.openPartsSeconds);
   }
   if (state.oxygen > 97 && !b.energyCell) return info('Zuurstoftank is vol');
-  return info('[E] Voorraadbunker openen', true, ia.openSupplySeconds);
+  return info('[E] Voorraadbunker openen', 'open', ia.openSupplySeconds);
 }
 
 /**
@@ -78,7 +86,7 @@ export function updateInteraction(state: GameState, input: InputState, dt: numbe
   if (ia.progress >= 1) {
     ia.progress = 0;
     ia.latched = true;
-    perform(state, target);
+    perform(state, target, info.action);
   }
   return true;
 }
@@ -89,24 +97,25 @@ function sameTargetAs(a: Target | null, b: Target | null): boolean {
   return a.bunker === b.bunker;
 }
 
-function perform(state: GameState, target: Target): void {
+function perform(state: GameState, target: Target, action: Action): void {
   const needed = state.world.planet.partsNeeded;
   if (target.kind === 'ship') {
-    const ship = state.world.ship;
-    if (state.partsInstalled >= needed) {
-      emit(state, { type: 'burst', x: ship.x, y: ship.y - 10, color: '#ffd24a', count: 40 });
-      state.status = 'launched';
+    if (action === 'starmap') {
+      emit(state, { type: 'starmap' });
       return;
     }
+    const ship = state.world.ship;
     state.partsInstalled++;
     state.energy -= CONFIG.energy.installCost;
-    emit(state, { type: 'burst', x: ship.x - 14 + (state.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });
+    emit(state, { type: 'burst', x: ship.x - 13 + (state.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });
+    const unlocked = unlockIfRepaired(state);
     emit(state, {
       type: 'toast',
-      text: state.partsInstalled >= needed
-        ? 'Schip compleet. Houd E vast om te lanceren'
+      text: unlocked
+        ? 'Motor gerepareerd. Open de sterrenkaart om verder te reizen'
         : `Onderdeel ingebouwd (${state.partsInstalled}/${needed})`,
     });
+    emit(state, { type: 'progress' });
     return;
   }
 
@@ -116,6 +125,7 @@ function perform(state: GameState, target: Target): void {
     state.partsCarried++;
     emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#ffb347', count: 20 });
     emit(state, { type: 'toast', text: `Scheepsonderdeel gevonden (${state.partsCarried}/${needed})` });
+    emit(state, { type: 'progress' });
     return;
   }
 
@@ -128,4 +138,5 @@ function perform(state: GameState, target: Target): void {
   }
   emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#4fd8ff', count: 16 });
   emit(state, { type: 'toast', text });
+  emit(state, { type: 'progress' });
 }

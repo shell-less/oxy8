@@ -31,17 +31,26 @@
         <div class="panel" id="hint"></div>
         <canvas class="panel" id="minimap" aria-label="Minikaart"></canvas>
 
+        <section id="starmap" hidden aria-label="Sterrenkaart">
+          <div id="starmap-title">Sterrenkaart</div>
+          <div id="starmap-sub"></div>
+          <div id="starmap-list"></div>
+          <div id="starmap-foot"></div>
+        </section>
+
         <div id="overlay">
           <div id="overlay-title">Oxy8</div>
           <div id="overlay-hazard"></div>
-          <div id="overlay-sub">Klik om te landen</div>
-          <div id="overlay-keys">WASD of pijltjes: lopen · E vasthouden: openen en inbouwen · F: helmlamp</div>
+          <div id="overlay-sub"></div>
+          <div id="overlay-actions"></div>
+          <div id="overlay-keys">WASD of pijltjes: lopen · E vasthouden: openen, inbouwen, sterrenkaart · F: helmlamp</div>
         </div>
       </div>
 
       <nav id="debug" hidden>
         <button id="dbg-time" type="button">Tijd x20</button>
-        <button id="dbg-next" type="button">Volgende planeet</button>
+        <button id="dbg-repair" type="button">Motor repareren</button>
+        <button id="dbg-energy" type="button">Energie +50</button>
       </nav>
     </main>
     <script type="module" src="/src/main.ts"></script>

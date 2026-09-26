@@ -118,7 +118,6 @@ html, body { margin: 0; height: 100%; }
   padding: 0 2em;
   text-align: center;
   background: rgba(6, 4, 16, 0.8);
-  cursor: pointer;
 }
 #overlay[hidden] { display: none; }
 #overlay-title { font-size: 1.8em; font-weight: 600; }
@@ -126,14 +125,57 @@ html, body { margin: 0; height: 100%; }
 #overlay-sub { color: var(--muted); }
 #overlay-keys { color: var(--muted); font-size: 0.85em; }
 
-#debug { display: flex; gap: 8px; }
-#debug[hidden] { display: none; }
-#debug button {
+#overlay-actions { display: flex; gap: 0.6em; margin-top: 0.4em; }
+
+#starmap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(64%, 40em);
+  max-height: 86%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 1em 1.2em;
+  background: #0a0816;
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  z-index: 2;
+}
+#starmap[hidden] { display: none; }
+#starmap-title { font-size: 1.4em; font-weight: 600; }
+#starmap-sub, #starmap-foot { color: var(--muted); }
+#starmap-list { display: flex; flex-direction: column; gap: 0.4em; overflow: auto; }
+
+.dest {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.2em 0.8em;
+  width: 100%;
+  text-align: left;
+}
+.dest .dot { width: 1em; height: 1em; grid-row: span 2; }
+.dest .name { color: var(--ink); }
+.dest .note { color: var(--muted); font-size: 0.85em; grid-column: 2; }
+.dest .loot { grid-row: span 2; color: var(--energy); text-align: right; }
+.dest[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+.dest[aria-disabled='true']:hover { background: transparent; }
+.dest.here { border-color: #7dff8a; }
+
+.btn, #debug button {
   font: inherit;
   color: var(--ink);
   background: transparent;
   border: 1px solid var(--panel-line);
   border-radius: 4px;
-  padding: 6px 12px;
+  padding: 0.45em 0.9em;
   cursor: pointer;
 }
+.btn:hover, #debug button:hover { background: rgba(160, 220, 255, 0.08); }
+.btn:focus-visible { outline: 1px solid #ffe9a0; outline-offset: 2px; }
+.btn.primary { border-color: #ffe9a0; color: #ffe9a0; }
+
+#debug { display: flex; gap: 8px; }
+#debug[hidden] { display: none; }

@@ -29,10 +29,12 @@ src/
   core/              rng (seeded), clock (day/night), input (keyboard to InputState).
   world/             themes (look + hazard per planet type), planets (fixed order),
                      generate (pure, deterministic layout), types.
-  game/              state (GameState, landOn, events), update (step: runs the systems in order).
+  game/              state (GameState, landOn, events), update (step: runs the systems in order),
+                     campaign (per-planet progress, engine unlocks, leftovers), travel (star map rows,
+                     flying), save (localStorage, validated, versioned).
   systems/           movement, interaction, creepers, hazards, survival. Pure functions on GameState.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
-                     ground (painted once per planet), particles, minimap, hud (DOM).
+                     ground (painted once per planet), particles, minimap, hud and starmap (DOM).
 tests/               Vitest tests for world generation and systems.
 ```
 
@@ -42,6 +44,7 @@ tests/               Vitest tests for world generation and systems.
 - **Events, not side effects.** Systems call `emit(state, …)` for toasts, particles, shake. The renderer drains `state.events` each frame.
 - **Config over constants.** New tunable numbers go in `config.ts` with a comment and a unit.
 - **Sprites in code.** Sprites are small rectangle drawings in `render/sprites.ts`, anchored at the foot point. Keep to whole pixels.
+- **Worlds are regenerated, not saved.** A save stores only what changed per planet (`PlanetProgress`). Changing generation for an existing planet changes it for players with a save, so treat seeds and generation order as stable. When `SaveData` changes shape, bump its version and handle the old one.
 - **Tests for rules.** A new gameplay rule gets a test in `tests/`. Use `landOn(index)` and `step(state, input, dt)`; see `tests/systems.test.ts` for helpers.
 
 ### Adding things

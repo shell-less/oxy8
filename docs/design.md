@@ -14,8 +14,8 @@ This file records what we decided and why. Update it when a decision changes, so
 | Resource | Starts at | Gained from | Spent on |
 | --- | --- | --- | --- |
 | Oxygen | 100% on each landing | Supply bunkers (always, unlimited) | Passive drain (~3 minutes from full), creeper hits (25%), hazards |
-| Energy | 30 on planet 1, carried over after that | Energy cells in supply bunkers (+35, once per bunker) | Installing a ship part (20), helmet lamp at night (~11 per night) |
-| Ship parts | 0 per planet | Parts bunkers (one each, once) | Installing into the ship |
+| Energy | 30 at the start of a new game, carried everywhere after that | Energy cells in supply bunkers (+35, once per bunker) | Installing a ship part (20), helmet lamp at night (~11 per night), every flight (10) |
+| Ship parts | 0 per planet | Parts bunkers (one each, once) | Installing into the ship's engine |
 
 Food was considered and dropped: oxygen alone keeps the pressure on.
 
@@ -38,19 +38,32 @@ The order is fixed, so everyone plays the same planets. Planet 1 needs 3 parts, 
 | 3 | Umbra-9 | Purple, crater-heavy, pink crystals | **Meteor showers**: a red ring marks the impact spot, a hit costs 15% | 5 |
 | 4 (later) | Viridia | Green, rocky, yellow crystals | **Toxic pools**: standing in one drains oxygen fast | 5 |
 
-Launching takes you to the next planet. Energy carries over; oxygen is refilled by the ship. Dying restarts the current planet with the energy you arrived with.
+## Ship, engine and travel
+
+The ship still flies, but its engine is too weak for the next planet. The parts found on a planet upgrade the engine; once all parts of that planet are installed, the engine reaches one planet further. Planets you can already reach stay reachable, so you can **always fly back** to an earlier planet, even halfway through a repair.
+
+Hold E at the ship: it installs a carried part when you have the energy, otherwise it opens the **star map**. The star map lists every planet with its status (here, visited, new, locked, unknown) and, for planets you have seen, how many **energy cells are left** there, so you can decide whether a trip back is worth the flight. Every flight costs 10 energy. After the last planet is repaired, the star map offers the way home, which ends the game.
+
+Planets keep their state: looted bunkers stay empty, taken energy cells stay gone, installed parts stay installed, and the explored minimap is remembered. Leftovers are energy cells for now; crafting parts will be added to them later.
+
+You always land in the morning next to the ship with a full oxygen tank.
+
+## Saving and dying
+
+The game saves itself in the browser (localStorage) on every landing and after every completed action. The title screen offers "Verder spelen" or "Nieuw spel". Resuming puts you at the ship with a full tank.
+
+Dying rolls back to the moment you landed on the current planet: the planet, your energy and your progress there are restored to that point.
 
 ## Roadmap
 
 1. ~~Project setup: Vite, TypeScript, CI, GitHub Pages~~
 2. ~~Port the mockup into modules with the same behaviour~~
-3. Progression: travel back to earlier planets, save progress in the browser (localStorage)
+3. ~~Progression: star map, travel back to earlier planets, save progress in the browser~~
 4. Tutorial, including the helmet lamp
 5. Crafting formulas for more complex objects
 6. Polish: sound, balance, title screen
 
 ## Open questions
 
-- What does travelling back to an earlier planet offer? Leftover energy cells, or something for crafting?
-- Should the world stay as you left it when you return (looted bunkers stay empty)?
-- Which crafting recipes come first, and do they need a new resource?
+- Which crafting recipes come first, and do they need a new resource? Crafting parts will also count as leftovers on the star map.
+- A player with less than 10 energy and no energy cells left on the current planet cannot fly anywhere. Only "Nieuw spel" gets them out. Do we need an emergency option?
