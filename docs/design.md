@@ -27,6 +27,8 @@ A full day lasts 5 real minutes. Nights are dark: you see what your helmet lamp,
 
 Slow patrols on an ellipse around bunkers. Every parts bunker has one, plus two supply bunkers. They chase you when you come close, at about 40% of your speed, and give up when you get away or they stray too far from their bunker. They cannot be killed. After a hit they retreat and ignore you for a few seconds.
 
+**Jumpers** (Umbra-9) do not walk. They hop in small jumps around their bunker. When they see you they crouch for about half a second while a red marker shows where they will land; the marker follows you until the jump starts, then stays put. They only hurt you by landing on you, so stepping aside during the jump dodges them. After a pounce they need a moment to recover. Which kind guards a planet is set per planet in `PLANETS`.
+
 ## Planets
 
 The order is fixed, so everyone plays the same planets. Planet 1 needs 3 parts, later planets need 5, and every new planet should be a bit harder than the one before.
@@ -35,7 +37,7 @@ The order is fixed, so everyone plays the same planets. Planet 1 needs 3 parts, 
 | --- | --- | --- | --- | --- |
 | 1 | Kepler-442 | Red dust, craters, turquoise crystals | **Sandstorms**: less sight and speed for you, less sight for creepers. Warning a few seconds before. | 3 |
 | 2 | Nereid-117 | Blue ice plains, tall ice spires | **Freezing nights**: oxygen drain up to 1.9x in the dark | 5 |
-| 3 | Umbra-9 | Purple, crater-heavy, pink crystals | **Meteor showers**: a red ring marks the impact spot, a hit costs 15% | 5 |
+| 3 | Umbra-9 | Purple, crater-heavy, pink crystals, jumping creepers | **Meteor showers**: a red ring marks the impact spot, a hit costs 15% | 5 |
 | 4 (later) | Viridia | Green, rocky, yellow crystals | **Toxic pools**: standing in one drains oxygen fast | 5 |
 
 ## Ship, engine and travel

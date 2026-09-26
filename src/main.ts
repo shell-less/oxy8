@@ -202,6 +202,8 @@ window.addEventListener('keydown', (e) => {
 
 if (debug) {
   byId('debug').hidden = false;
+  // For poking around in the browser console: oxy8.state()
+  Object.assign(window, { oxy8: { state: () => state } });
   const timeBtn = byId<HTMLButtonElement>('dbg-time');
   timeBtn.addEventListener('click', () => {
     state.timeScale = state.timeScale === 1 ? 20 : 1;

@@ -5,7 +5,7 @@ import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
 import { radialGlow, rect, type Ctx } from './pixels';
-import { drawBunker, drawCreeper, drawCrystal, drawPlayer, drawShip } from './sprites';
+import { drawBunker, drawCreeper, drawCrystal, drawPlayer, drawPounceMarker, drawShip } from './sprites';
 
 const VW = CONFIG.view.width;
 const VH = CONFIG.view.height;
@@ -102,6 +102,10 @@ export class Renderer {
     this.drawProgress(state);
     if (darkness > 0.01) this.drawNight(state, darkness, onScreen);
     this.drawMeteorMarkers(state);
+    // Warnings are drawn above the night layer: a fair game shows the danger even in the dark.
+    for (const c of world.creepers) {
+      if (c.jump && onScreen(c.jump.toX, c.jump.toY)) drawPounceMarker(ctx, c, Math.round(c.jump.toX - cx), Math.round(c.jump.toY - cy), t);
+    }
     this.drawScreenEffects(state, hour, darkness);
   }
 
@@ -157,7 +161,8 @@ export class Renderer {
     }
     for (const c of world.creepers) {
       if (onScreen(c.x, c.y)) {
-        radialGlow(ctx, c.x - cx + (c.facing > 0 ? 3 : -4), c.y - cy - 7, c.mode === 'chase' ? 10 : 7, '255,40,70', 0.6 * darkness);
+        const z = c.jump?.z ?? 0;
+        radialGlow(ctx, c.x - cx + (c.facing > 0 ? 3 : -4), c.y - cy - 7 - z, c.mode === 'chase' ? 10 : 7, '255,40,70', 0.6 * darkness);
       }
     }
     ctx.globalCompositeOperation = 'source-over';

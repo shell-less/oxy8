@@ -65,6 +65,23 @@ export const CONFIG = {
     hitRadius: 11,
     /** After a hit the creeper retreats and ignores the player for this long. */
     cooldownAfterHit: 3,
+    jumper: {
+      /** Pause between two small hops, in seconds (plus up to restJitter). */
+      restMin: 0.6,
+      restJitter: 0.6,
+      hopDistance: 16,
+      hopSeconds: 0.35,
+      hopHeight: 5,
+      /** Warning before a pounce: the jumper crouches and marks its landing spot. */
+      crouchSeconds: 0.55,
+      pounceRange: 64,
+      pounceSeconds: 0.6,
+      pounceHeight: 14,
+      /** Stunned after landing a pounce, in seconds. */
+      recoverSeconds: 1.1,
+      /** Landing this close to the player hurts. */
+      hitRadius: 10,
+    },
   },
 
   layout: {
