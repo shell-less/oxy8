@@ -11,6 +11,7 @@ import { Hud } from './render/hud';
 import { Minimap } from './render/minimap';
 import { Renderer } from './render/renderer';
 import { StarMap } from './render/starmap';
+import { TitleScene } from './render/title';
 import { Tips } from './render/tips';
 import { PLANETS } from './world/planets';
 
@@ -19,6 +20,8 @@ const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) 
 const canvas = byId<HTMLCanvasElement>('screen');
 const overlay = byId<HTMLDivElement>('overlay');
 const renderer = new Renderer(canvas.getContext('2d')!);
+const titleScene = new TitleScene(canvas.getContext('2d')!);
+const gameEl = byId<HTMLDivElement>('game');
 const minimap = new Minimap(byId<HTMLCanvasElement>('minimap'));
 const hud = new Hud();
 const keyboard = new Keyboard();
@@ -41,12 +44,21 @@ let state: GameState = landOn(0);
 /** Snapshot taken on landing. Dying rolls back to it. */
 let checkpoint: SaveData = toSaveData(state);
 let running = false;
+/** While true the animated title scene is drawn instead of the world, and the HUD is hidden. */
+let titleMode = false;
+let titleTheme = PLANETS[0].theme;
 /** The primary overlay button; Enter and Space press it. */
 let primaryAction: (() => void) | null = null;
 
 interface OverlayButton { label: string; action: () => void }
 
+function setTitleMode(on: boolean): void {
+  titleMode = on;
+  gameEl.classList.toggle('title-mode', on);
+}
+
 function showOverlay(title: string, hazard: string, sub: string, buttons: OverlayButton[]): void {
+  setTitleMode(false);
   byId('overlay-title').textContent = title;
   byId('overlay-hazard').textContent = hazard;
   byId('overlay-sub').textContent = sub;
@@ -162,6 +174,8 @@ function title(): void {
       tipsButton,
       soundButton,
     ]);
+    titleTheme = PLANETS[0].theme;
+    setTitleMode(true);
     return;
   }
   const planet = PLANETS[saved.live.planetIndex];
@@ -175,6 +189,8 @@ function title(): void {
     tipsButton,
     soundButton,
   ]);
+  titleTheme = planet.theme;
+  setTitleMode(true);
 }
 
 function onDeath(): void {
@@ -274,7 +290,8 @@ function frame(now: number): void {
   sound.update(state, dt, running);
   for (const text of renderer.consumeEvents(state)) hud.showToast(text);
   renderer.update(state, dt);
-  renderer.draw(state);
+  if (titleMode) titleScene.draw(dt, titleTheme);
+  else renderer.draw(state);
   hud.update(state, dt, t);
   minimap.update(state, dt, t);
   requestAnimationFrame(frame);

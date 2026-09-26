@@ -199,3 +199,15 @@ html, body { margin: 0; height: 100%; }
 
 #debug { display: flex; gap: 8px; }
 #debug[hidden] { display: none; }
+
+/* Title screen: the canvas shows the title scene; hide the HUD and let the scene show through. */
+#game.title-mode .panel { display: none; }
+#game.title-mode #overlay {
+  background: transparent;
+  justify-content: flex-end;
+  padding-bottom: 7%;
+}
+#game.title-mode #overlay-title { display: none; }
+#game.title-mode #overlay-sub { color: var(--ink); }
+#game.title-mode .btn { background: rgba(6, 4, 16, 0.75); }
+#game.title-mode #overlay-keys { background: rgba(6, 4, 16, 0.6); padding: 0.2em 0.6em; border-radius: 4px; }
