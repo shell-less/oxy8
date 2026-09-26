@@ -14,10 +14,32 @@ export class Hud {
   private el = {
     o2Bar: $('o2-bar'), o2Val: $('o2-val'), enBar: $('en-bar'), enVal: $('en-val'),
     lamp: $('lamp'), inventory: $('inventory'), planet: $('planet-name'), clock: $('clock'), slots: $('slots'),
-    hazard: $('hazard'), toast: $('toast'), hint: $('hint'),
+    hazard: $('hazard'), toast: $('toast'), hint: $('hint'), keys: $('keys'),
   };
   private last = new Map<string, string>();
   private toastTimer = 0;
+
+  /** The key legend in the corner; H hides it, remembered per browser. */
+  get keysVisible(): boolean {
+    return !this.el.keys.hidden;
+  }
+
+  setKeysVisible(visible: boolean): void {
+    this.el.keys.hidden = !visible;
+    try {
+      localStorage.setItem('oxy8.keys', visible ? '1' : '0');
+    } catch {
+      // Not important.
+    }
+  }
+
+  restoreKeysVisible(): void {
+    try {
+      this.el.keys.hidden = localStorage.getItem('oxy8.keys') === '0';
+    } catch {
+      // Keep the default: visible.
+    }
+  }
 
   showToast(text: string): void {
     this.el.toast.textContent = text;
@@ -46,6 +68,11 @@ export class Hud {
     if (inv.beacons > 0) items.push(`Baken ${inv.beacons} (R)`);
     if (inv.armour) items.push('Pak versterkt');
     this.text(el.inventory, items.join(' · '));
+
+    for (const key of el.keys.querySelectorAll<HTMLElement>('[data-item]')) {
+      const have = key.dataset.item === 'bottle' ? inv.bottles > 0 : inv.beacons > 0;
+      key.classList.toggle('unavailable', !have);
+    }
 
     const planet = state.world.planet;
     this.text(el.planet, `${planet.name} · ${planet.theme.colourName}`);
