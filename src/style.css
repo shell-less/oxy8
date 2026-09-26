@@ -103,14 +103,38 @@ html, body { margin: 0; height: 100%; }
 #tip[hidden] { display: none; }
 .tip-label { color: #ffe9a0; font-weight: 600; }
 
+/* Sits above the key legend, so a long prompt never runs into it. */
 #hint {
-  bottom: 8px;
+  bottom: calc(8px + 3.4em);
   left: 50%;
   transform: translateX(-50%);
   opacity: 0;
   white-space: nowrap;
   pointer-events: none;
 }
+
+#keys {
+  bottom: 8px;
+  left: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 0.15em 0.8em;
+  font-size: 0.72em;
+  color: var(--muted);
+  opacity: 0.8;
+  pointer-events: none;
+}
+#keys[hidden] { display: none; }
+#keys kbd {
+  font: inherit;
+  color: var(--ink);
+  border: 1px solid var(--panel-line);
+  border-radius: 2px;
+  padding: 0 0.3em;
+  margin-right: 0.2em;
+}
+/* Item keys fade when you have nothing to use them on. */
+#keys .unavailable { opacity: 0.45; }
 
 #minimap {
   bottom: 8px;

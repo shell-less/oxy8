@@ -14,13 +14,14 @@ A small pixel-art space survival game for the browser. You crash on a planet, yo
 | R | Place a decoy beacon |
 | M | All sound on or off |
 | N | Music on or off |
+| H | Hide or show the key legend |
 | 1-9, Esc | Pick a destination on the star map, close it |
 | F | Helmet lamp on or off |
 | Enter or Space | Continue from a menu screen |
 
 Keep your oxygen above zero. Supply bunkers (blue) always refill oxygen and sometimes hold a one-time energy cell (yellow light). Parts bunkers (orange stripes) hold one ship part each. Install all parts of a planet to make the engine strong enough for the next one. Installing costs energy, and so do the helmet lamp at night and every flight. Scrap lies around on every planet; at the ship's workbench you turn it into oxygen bottles, decoy beacons and a reinforced suit. The star map shows how many energy cells and scrap are left on planets you visited, so you can fly back for them. Creepers cannot be killed: a hit tears your suit for 25% oxygen.
 
-The game saves itself in your browser. Short tips explain the rest while you play; switch them off on the title screen.
+The keys are listed in the bottom-left corner while you play. The game saves itself in your browser. Short tips explain the rest while you play; switch them off on the title screen.
 
 Each planet has its own hazard: sandstorms, freezing nights, meteor showers, and (on a later planet) toxic pools.
 

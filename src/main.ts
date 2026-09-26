@@ -27,6 +27,7 @@ const titleScene = new TitleScene(canvas.getContext('2d')!);
 const gameEl = byId<HTMLDivElement>('game');
 const minimap = new Minimap(byId<HTMLCanvasElement>('minimap'));
 const hud = new Hud();
+hud.restoreKeysVisible();
 const keyboard = new Keyboard();
 const starMap = new StarMap(pickDestination, resume, (id) => {
   const result = craft(state, id);
@@ -244,6 +245,10 @@ function handleAppEvents(): void {
 }
 
 window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyH' && !e.repeat) {
+    hud.setKeysVisible(!hud.keysVisible);
+    return;
+  }
   if (e.code === 'KeyN' && !e.repeat) {
     music.setEnabled(!music.enabled);
     hud.showToast(music.enabled ? 'Muziek aan' : 'Muziek uit');

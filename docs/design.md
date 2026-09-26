@@ -73,7 +73,7 @@ Dying rolls back to the moment you landed on the current planet: the planet, you
 
 ## Tutorial
 
-No tutorial level and no manual. Short tips appear at the moment they become useful, one at a time at the top of the screen, each only once per browser: how to walk, what the bunkers are, that creepers cannot be beaten, where to take a part, what to do when oxygen runs low, the helmet lamp at dusk and without lamp at night, the star map once the engine is ready, and leftovers on earlier planets. The tips live in `src/game/tutorial.ts` in priority order. The title screen can switch them off; a new game does not repeat tips already seen.
+No tutorial level and no manual. Short tips appear at the moment they become useful, one at a time at the top of the screen, each only once per browser: how to walk, what the bunkers are, that creepers cannot be beaten, where to take a part, what to do when oxygen runs low, the helmet lamp at dusk and without lamp at night, the star map once the engine is ready, and leftovers on earlier planets. The tips live in `src/game/tutorial.ts` in priority order. A small key legend sits in the bottom-left corner of the HUD; item keys fade while you carry nothing to use, and H hides the legend. The title screen can switch them off; a new game does not repeat tips already seen.
 
 ## Balance
 
