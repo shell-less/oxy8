@@ -31,6 +31,10 @@ export class Minimap {
     for (const p of world.pools) {
       if (explored(p.x, p.y)) ctx.fillRect(Math.floor(p.x / T) - 1, Math.floor(p.y / T) - 1, Math.max(2, Math.floor((p.rx / T) * 2)), 2);
     }
+    ctx.fillStyle = '#b8c0c8';
+    for (const s of world.scrap) {
+      if (!s.taken && explored(s.x, s.y)) ctx.fillRect(Math.floor(s.x / T), Math.floor(s.y / T), 1, 1);
+    }
     for (const b of world.bunkers) {
       if (!explored(b.x, b.y)) continue;
       ctx.fillStyle = b.kind === 'parts' ? (b.looted ? '#6a4a30' : '#ff9a3c') : '#43d6ff';

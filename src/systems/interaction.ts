@@ -50,14 +50,17 @@ export function describe(state: GameState, target: Target | null): ActionInfo | 
     if (waiting) status = `Te weinig energie om in te bouwen (${cost} nodig)`;
     else if (isRepaired(state)) status = PLANETS[state.planetIndex + 1] ? 'Motor klaar voor de volgende planeet' : 'Motor klaar voor de reis naar huis';
     else status = `Motor mist nog ${needed - state.partsInstalled} onderdelen`;
-    return info(`${status} · [E] Sterrenkaart`, 'starmap', ia.starMapSeconds);
+    return info(`${status} · [E] Schip: werkbank en sterrenkaart`, 'starmap', ia.starMapSeconds);
   }
 
   const b = target.bunker;
   if (b.kind === 'parts') {
     return b.looted ? info('Bunker is leeg') : info('[E] Onderdelenbunker openen', 'open', ia.openPartsSeconds);
   }
-  if (state.oxygen > 97 && !b.energyCell) return info('Zuurstoftank is vol');
+  const cellFits = b.energyCell && canTakeCell(state);
+  if (state.oxygen > 97 && !cellFits) {
+    return info(b.energyCell ? 'Zuurstof vol, energie te vol voor de energiecel' : 'Zuurstoftank is vol');
+  }
   return info('[E] Voorraadbunker openen', 'open', ia.openSupplySeconds);
 }
 
@@ -97,6 +100,11 @@ function sameTargetAs(a: Target | null, b: Target | null): boolean {
   return a.bunker === b.bunker;
 }
 
+/** Cells are only taken when all their energy fits, so none is wasted and the planet's budget holds. */
+function canTakeCell(state: GameState): boolean {
+  return state.energy + CONFIG.energy.cellAmount <= CONFIG.energy.max;
+}
+
 function perform(state: GameState, target: Target, action: Action): void {
   const needed = state.world.planet.partsNeeded;
   if (target.kind === 'ship') {
@@ -109,6 +117,7 @@ function perform(state: GameState, target: Target, action: Action): void {
     state.energy -= CONFIG.energy.installCost;
     emit(state, { type: 'burst', x: ship.x - 13 + (state.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });
     const unlocked = unlockIfRepaired(state);
+    emit(state, { type: 'sound', name: unlocked ? 'repaired' : 'install' });
     emit(state, {
       type: 'toast',
       text: unlocked
@@ -124,6 +133,7 @@ function perform(state: GameState, target: Target, action: Action): void {
     b.looted = true;
     state.partsCarried++;
     emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#ffb347', count: 20 });
+    emit(state, { type: 'sound', name: 'part' });
     emit(state, { type: 'toast', text: `Scheepsonderdeel gevonden (${state.partsCarried}/${needed})` });
     emit(state, { type: 'progress' });
     return;
@@ -131,12 +141,15 @@ function perform(state: GameState, target: Target, action: Action): void {
 
   state.oxygen = 100;
   let text = 'Zuurstof bijgevuld';
-  if (b.energyCell) {
+  if (b.energyCell && !canTakeCell(state)) {
+    text += '. Energiecel blijft liggen: je energie is te vol';
+  } else if (b.energyCell) {
     b.energyCell = false;
-    state.energy = Math.min(100, state.energy + CONFIG.energy.cellAmount);
+    state.energy += CONFIG.energy.cellAmount;
     text += `, energiecel +${CONFIG.energy.cellAmount}`;
   }
   emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#4fd8ff', count: 16 });
+  emit(state, { type: 'sound', name: 'supply' });
   emit(state, { type: 'toast', text });
   emit(state, { type: 'progress' });
 }

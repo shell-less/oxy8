@@ -31,10 +31,12 @@ src/
                      generate (pure, deterministic layout), types.
   game/              state (GameState, landOn, events), update (step: runs the systems in order),
                      campaign (per-planet progress, engine unlocks, leftovers), travel (star map rows,
-                     flying), save (localStorage, validated, versioned), tutorial (tips and when to show them).
-  systems/           movement, interaction, creepers, hazards, survival. Pure functions on GameState.
+                     flying), save (localStorage, validated, versioned, migrated), tutorial (tips and when to show them),
+                     crafting (recipes and the workbench rules).
+  systems/           movement, interaction, creepers, hazards, survival, items (scrap pickup, bottle, beacons).
+                     Pure functions on GameState.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
-                     ground (painted once per planet), particles, minimap, hud, starmap and tips (DOM).
+                     ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench) and tips (DOM).
 tests/               Vitest tests for world generation and systems.
 ```
 

@@ -8,6 +8,8 @@ export interface PlanetProgress {
   lootedBunkers: number[];
   /** Ids of supply bunkers whose energy cell was taken. */
   takenCells: number[];
+  /** Ids of scrap pieces picked up. */
+  takenScrap: number[];
   partsCarried: number;
   partsInstalled: number;
   /** Explored minimap tiles, bit-packed and base64 encoded. */
@@ -31,6 +33,7 @@ export function captureProgress(state: GameState): PlanetProgress {
   return {
     lootedBunkers: bunkers.filter((b) => b.kind === 'parts' && b.looted).map((b) => b.id),
     takenCells: bunkers.filter((b) => b.kind === 'supply' && !b.energyCell && b.id < firstBunkerWithoutCell(state)).map((b) => b.id),
+    takenScrap: state.world.scrap.filter((x) => x.taken).map((x) => x.id),
     partsCarried: state.partsCarried,
     partsInstalled: state.partsInstalled,
     explored: packBits(state.explored),
@@ -50,6 +53,8 @@ export function applyProgress(state: GameState, progress: PlanetProgress): void 
     if (b.kind === 'parts') b.looted = looted.has(b.id);
     else if (taken.has(b.id)) b.energyCell = false;
   }
+  const scrapTaken = new Set(progress.takenScrap);
+  for (const x of state.world.scrap) x.taken = scrapTaken.has(x.id);
   state.partsCarried = progress.partsCarried;
   state.partsInstalled = progress.partsInstalled;
   state.explored = unpackBits(progress.explored, state.explored.length);
@@ -68,6 +73,14 @@ export function energyCellsLeft(state: GameState, planetIndex: number): number |
   const progress = state.campaign.planets[planetIndex];
   if (!progress) return null;
   return PLANETS[planetIndex].energyCells - progress.takenCells.length;
+}
+
+/** Scrap still lying on a planet, or null when the planet was never visited. */
+export function scrapLeft(state: GameState, planetIndex: number): number | null {
+  if (planetIndex === state.planetIndex) return state.world.scrap.filter((x) => !x.taken).length;
+  const progress = state.campaign.planets[planetIndex];
+  if (!progress) return null;
+  return CONFIG.crafting.scrapPerPlanet - progress.takenScrap.length;
 }
 
 /** Called after an install. Completing this planet's upgrade lets the engine reach one planet further. */

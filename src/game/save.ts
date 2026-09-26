@@ -1,13 +1,22 @@
 import { PLANETS } from '../world/planets';
 import { snapshotCampaign, type Campaign, type PlanetProgress } from './campaign';
-import { landOn, type GameState } from './state';
+import { emptyInventory, landOn, type GameState, type Inventory } from './state';
 
 /** Everything needed to rebuild a game. The worlds themselves come back from their fixed seeds. */
 export interface SaveData {
+  version: 2;
+  planetIndex: number;
+  energy: number;
+  inventory: Inventory;
+  campaign: Campaign;
+}
+
+/** Version 1 (before crafting): no inventory, no scrap progress. */
+interface SaveDataV1 {
   version: 1;
   planetIndex: number;
   energy: number;
-  campaign: Campaign;
+  campaign: { unlocked: number; planets: (Omit<PlanetProgress, 'takenScrap'> | null)[] };
 }
 
 /**
@@ -22,7 +31,13 @@ export interface SaveFile {
 const KEY = 'oxy8.save';
 
 export function toSaveData(state: GameState): SaveData {
-  return { version: 1, planetIndex: state.planetIndex, energy: state.energy, campaign: snapshotCampaign(state) };
+  return {
+    version: 2,
+    planetIndex: state.planetIndex,
+    energy: state.energy,
+    inventory: { ...state.inventory },
+    campaign: snapshotCampaign(state),
+  };
 }
 
 /** Resumes at the ship with a full tank, in the morning. */
@@ -30,7 +45,7 @@ export function fromSaveData(data: SaveData): GameState {
   const campaign = structuredClone(data.campaign);
   // Saves from before a new planet was added simply have fewer entries.
   while (campaign.planets.length < PLANETS.length) campaign.planets.push(null);
-  return landOn(data.planetIndex, { energy: data.energy, campaign });
+  return landOn(data.planetIndex, { energy: data.energy, inventory: data.inventory, campaign });
 }
 
 /** Minimal storage interface, so tests can pass a Map-backed fake. */
@@ -53,8 +68,10 @@ export function readSave(store: KeyValueStore | null = browserStore()): SaveFile
   try {
     const raw = store?.getItem(KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as SaveFile;
-    return isValid(parsed.live) && isValid(parsed.checkpoint) ? parsed : null;
+    const parsed = JSON.parse(raw) as { live: unknown; checkpoint: unknown };
+    const live = migrate(parsed.live);
+    const checkpoint = migrate(parsed.checkpoint);
+    return isValid(live) && isValid(checkpoint) ? { live, checkpoint } : null;
   } catch {
     return null;
   }
@@ -76,8 +93,30 @@ export function clearSave(store: KeyValueStore | null = browserStore()): void {
   }
 }
 
+/** Brings older saves up to the current version. Unknown shapes pass through and fail validation. */
+function migrate(data: unknown): SaveData | undefined {
+  const d = data as SaveDataV1 | SaveData | undefined;
+  if (!d || typeof d !== 'object') return undefined;
+  if (d.version === 1 && d.campaign && Array.isArray(d.campaign.planets)) {
+    return {
+      version: 2,
+      planetIndex: d.planetIndex,
+      energy: d.energy,
+      inventory: emptyInventory(),
+      campaign: {
+        unlocked: d.campaign.unlocked,
+        planets: d.campaign.planets.map((p) => (p ? { ...p, takenScrap: [] } : null)),
+      },
+    };
+  }
+  return d as SaveData;
+}
+
 function isValid(d: SaveData | undefined): d is SaveData {
-  if (!d || d.version !== 1) return false;
+  if (!d || d.version !== 2) return false;
+  const inv = d.inventory;
+  if (!inv || typeof inv.scrap !== 'number' || typeof inv.bottles !== 'number'
+    || typeof inv.beacons !== 'number' || typeof inv.armour !== 'boolean') return false;
   if (!Number.isInteger(d.planetIndex) || d.planetIndex < 0 || d.planetIndex >= PLANETS.length) return false;
   if (typeof d.energy !== 'number' || !d.campaign || !Array.isArray(d.campaign.planets)) return false;
   if (d.campaign.planets.length > PLANETS.length) return false;
@@ -85,7 +124,7 @@ function isValid(d: SaveData | undefined): d is SaveData {
 }
 
 function isProgress(p: PlanetProgress): boolean {
-  return Array.isArray(p.lootedBunkers) && Array.isArray(p.takenCells)
+  return Array.isArray(p.lootedBunkers) && Array.isArray(p.takenCells) && Array.isArray(p.takenScrap)
     && typeof p.partsCarried === 'number' && typeof p.partsInstalled === 'number' && typeof p.explored === 'string';
 }
 

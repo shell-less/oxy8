@@ -14,8 +14,9 @@ This file records what we decided and why. Update it when a decision changes, so
 | Resource | Starts at | Gained from | Spent on |
 | --- | --- | --- | --- |
 | Oxygen | 100% on each landing | Supply bunkers (always, unlimited) | Passive drain (~3 minutes from full), creeper hits (25%), hazards |
-| Energy | 30 at the start of a new game, carried everywhere after that | Energy cells in supply bunkers (+35, once per bunker) | Installing a ship part (20), helmet lamp at night (~11 per night), every flight (10) |
+| Energy | 30 at the start of a new game, carried everywhere after that, max 100 | Energy cells in supply bunkers (+35, once per bunker; left in the bunker if it would not fit) | Installing a ship part (20), helmet lamp at night (~12 per night), every flight (10) |
 | Ship parts | 0 per planet | Parts bunkers (one each, once) | Installing into the ship's engine |
+| Scrap | 0, carried everywhere | 10 pieces lying on every planet, picked up by walking over them | Recipes on the ship's workbench |
 
 Food was considered and dropped: oxygen alone keeps the pressure on.
 
@@ -46,9 +47,21 @@ The ship still flies, but its engine is too weak for the next planet. The parts 
 
 Hold E at the ship: it installs a carried part when you have the energy, otherwise it opens the **star map**. The star map lists every planet with its status (here, visited, new, locked, unknown) and, for planets you have seen, how many **energy cells are left** there, so you can decide whether a trip back is worth the flight. Every flight costs 10 energy. After the last planet is repaired, the star map offers the way home, which ends the game.
 
-Planets keep their state: looted bunkers stay empty, taken energy cells stay gone, installed parts stay installed, and the explored minimap is remembered. Leftovers are energy cells for now; crafting parts will be added to them later.
+Planets keep their state: looted bunkers stay empty, taken energy cells and scrap stay gone, installed parts stay installed, and the explored minimap is remembered. Leftovers are energy cells and scrap.
 
 You always land in the morning next to the ship with a full oxygen tank.
+
+## Crafting
+
+Hold E at the ship to open the ship menu: the **workbench** on top, the star map below. Recipes cost scrap only, so energy stays the currency for travel and repairs.
+
+| Recipe | Scrap | Effect |
+| --- | --- | --- |
+| Zuurstoffles | 3 | Carry one. Q adds 40% oxygen anywhere. |
+| Lokbaken | 2 | Carry up to two. R places it; creepers within 120 px go for the beacon instead of you for 20 seconds. Jumpers pounce on it. |
+| Pakversterking | 6 | One-time upgrade. Creeper and meteor hits cost 40% less oxygen. |
+
+Scrap left on a planet counts as a leftover on the star map, next to energy cells. Scrap has its own seed, so adding it did not move anything on existing planets. Recipes live in `src/game/crafting.ts`, numbers in `CONFIG.crafting`.
 
 ## Saving and dying
 
@@ -62,15 +75,33 @@ Dying rolls back to the moment you landed on the current planet: the planet, you
 
 No tutorial level and no manual. Short tips appear at the moment they become useful, one at a time at the top of the screen, each only once per browser: how to walk, what the bunkers are, that creepers cannot be beaten, where to take a part, what to do when oxygen runs low, the helmet lamp at dusk and without lamp at night, the star map once the engine is ready, and leftovers on earlier planets. The tips live in `src/game/tutorial.ts` in priority order. The title screen can switch them off; a new game does not repeat tips already seen.
 
+## Balance
+
+The numbers live in `src/config.ts`; `tests/balance.test.ts` guards the promises below, so a tweak or a new planet cannot quietly make the game unwinnable.
+
+- **Every planet pays for itself.** Its energy cells cover all installs, the next flight and one night of lamp, even when you arrive with zero energy. Anything you bring along is slack for the lamp and trips back.
+- **No wasted cells.** A cell stays in its bunker when your bar is too full to take all of it.
+- **Oxygen reach.** Every parts bunker is a round trip from a supply bunker on a freezing night, with a 50% detour and one creeper hit to spare.
+- **Escapable creepers.** Crawlers chase at under 60% of your walking speed; a jumper's landing can be walked out of in time.
+- **Scrap.** One planet holds enough scrap for the suit reinforcement and a bottle.
+
+## Title screen
+
+An animated scene drawn in the same 320x180 pixel style (`src/render/title.ts`): drifting stars, the pixel logo, the ship passing by, and the planet of your saved game rising at the bottom (Kepler-442 for a new game). The buttons sit below it: continue, new game, tips on or off, sound on or off.
+
+## Sound
+
+All sound is synthesised with Web Audio in `src/render/audio.ts`: no audio files. Systems emit `{ type: 'sound', name }` events; the sound board turns them into short retro effects. Continuous sounds: wind during sandstorms and a warning beep below 25% oxygen (faster below 10%). M or the title screen switches sound off; the choice is remembered.
+
 ## Roadmap
 
 1. ~~Project setup: Vite, TypeScript, CI, GitHub Pages~~
 2. ~~Port the mockup into modules with the same behaviour~~
 3. ~~Progression: star map, travel back to earlier planets, save progress in the browser~~
 4. ~~Tutorial: contextual tips, including the helmet lamp~~
-5. Crafting formulas for more complex objects
-6. Polish: sound, balance, title screen
+5. ~~Crafting: scrap, workbench, oxygen bottle, decoy beacon, suit reinforcement~~
+6. ~~Polish: sound, title screen, balance~~
 
 ## Open questions
 
-- Which crafting recipes come first, and do they need a new resource? Crafting parts will also count as leftovers on the star map.
+- More recipes later? Candidates: an efficient helmet lamp (half the energy), a bigger oxygen tank.

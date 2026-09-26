@@ -34,8 +34,10 @@ export const CONFIG = {
   },
 
   energy: {
-    /** Energy per second while the helmet lamp is on at night. About 11 per night. */
-    lampPerSecond: 0.12,
+    /** The energy bar is full at this value. */
+    max: 100,
+    /** Energy per second while the helmet lamp is on in the dark (~146 s per night): about 12 per night. */
+    lampPerSecond: 0.08,
     installCost: 20,
     cellAmount: 35,
     /** Every flight between planets, forward or back. */
@@ -93,6 +95,26 @@ export const CONFIG = {
     bunkerSpacing: 130,
   },
 
+  crafting: {
+    scrapPerPlanet: 10,
+    /** Walk this close to scrap to pick it up. */
+    pickupRange: 10,
+    bottle: { scrap: 3, carryMax: 1, oxygen: 40 },
+    armour: {
+      scrap: 6,
+      /** Damage from creepers and meteors is multiplied by this once the suit is reinforced. */
+      damageFactor: 0.6,
+    },
+    beacon: {
+      scrap: 2,
+      carryMax: 2,
+      /** Seconds a placed beacon keeps working. */
+      lifetime: 20,
+      /** Creepers within this distance of a beacon go for the beacon instead of the player. */
+      range: 120,
+    },
+  },
+
   tips: {
     /** Seconds after landing before the first tip. */
     firstDelay: 0.8,
@@ -102,6 +124,7 @@ export const CONFIG = {
     gapSeconds: 2,
     nearBunker: 110,
     nearCreeper: 90,
+    nearScrap: 70,
     lowOxygen: 50,
   },
 

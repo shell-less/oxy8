@@ -1,17 +1,27 @@
 import { CONFIG } from '../config';
+import { checkCraft, RECIPES, type Recipe, type RecipeId } from '../game/crafting';
 import type { GameState } from '../game/state';
 import { destinations, HOME_INDEX, type Destination } from '../game/travel';
 import { PLANETS } from '../world/planets';
 
-/** DOM panel listing where the ship can fly. Emits the chosen index; the caller performs the travel. */
+/**
+ * The ship menu: the workbench on top, the star map below. Emits choices; the caller
+ * performs the crafting or the travel and reopens or hides the menu.
+ */
 export class StarMap {
   private root = document.getElementById('starmap') as HTMLElement;
   private list = document.getElementById('starmap-list') as HTMLElement;
   private sub = document.getElementById('starmap-sub') as HTMLElement;
   private foot = document.getElementById('starmap-foot') as HTMLElement;
+  private bench = document.getElementById('workbench-list') as HTMLElement;
+  private benchSub = document.getElementById('workbench-sub') as HTMLElement;
   private rows: Destination[] = [];
 
-  constructor(private onPick: (index: number, row: Destination) => void, private onClose: () => void) {
+  constructor(
+    private onPick: (index: number, row: Destination) => void,
+    private onClose: () => void,
+    private onCraft: (id: RecipeId) => void,
+  ) {
     window.addEventListener('keydown', (e) => {
       if (!this.isOpen) return;
       if (e.code === 'Escape') {
@@ -32,13 +42,43 @@ export class StarMap {
   }
 
   open(state: GameState): void {
+    const focusedRecipe = (document.activeElement as HTMLElement | null)?.dataset.recipe;
+    this.benchSub.textContent = `Schroot: ${state.inventory.scrap}`;
+    this.bench.replaceChildren(...RECIPES.map((r) => this.renderRecipe(state, r)));
     this.rows = destinations(state);
     this.sub.textContent = `Energie: ${Math.round(state.energy)} · een vlucht kost ${CONFIG.energy.flightCost}`;
     this.foot.textContent = 'Klik of kies met 1-9 · Esc: terug naar de planeet';
     this.list.replaceChildren(...this.rows.map((row, i) => this.renderRow(row, i + 1)));
     this.root.hidden = false;
+    // After crafting, keep focus on the same recipe; otherwise start on the first flyable planet.
+    const again = focusedRecipe ? this.bench.querySelector<HTMLButtonElement>(`[data-recipe="${focusedRecipe}"]`) : null;
     const first = this.list.querySelector<HTMLButtonElement>('button[aria-disabled="false"]');
-    (first ?? this.list.querySelector('button'))?.focus();
+    (again ?? first ?? this.list.querySelector('button'))?.focus();
+  }
+
+  private renderRecipe(state: GameState, recipe: Recipe): HTMLButtonElement {
+    const check = checkCraft(state, recipe.id);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn dest';
+    btn.dataset.recipe = recipe.id;
+    btn.setAttribute('aria-disabled', String(!check.ok));
+
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = RECIPE_COLOURS[recipe.id];
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = recipe.name;
+    const cost = document.createElement('span');
+    cost.className = 'cost';
+    cost.textContent = `${recipe.scrap} schroot`;
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = `${recipe.effect} · ${check.note}`;
+    btn.append(dot, name, cost, note);
+    btn.addEventListener('click', () => this.onCraft(recipe.id));
+    return btn;
   }
 
   close(): void {
@@ -80,10 +120,14 @@ export class StarMap {
   }
 }
 
+const RECIPE_COLOURS: Record<RecipeId, string> = { bottle: '#4fd8ff', beacon: '#ff5060', armour: '#e8edf2' };
+
 function lootText(row: Destination): string {
   if (row.energyCells === null) return '';
-  if (row.energyCells === 0) return 'leeg';
-  return `${row.energyCells} ${row.energyCells === 1 ? 'energiecel' : 'energiecellen'}`;
+  const parts: string[] = [];
+  if (row.energyCells > 0) parts.push(`${row.energyCells} ${row.energyCells === 1 ? 'energiecel' : 'energiecellen'}`);
+  if (row.scrap) parts.push(`${row.scrap} schroot`);
+  return parts.length ? parts.join(' · ') : 'leeg';
 }
 
 function dotColour(row: Destination): string {

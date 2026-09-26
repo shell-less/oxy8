@@ -13,7 +13,7 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => {
 export class Hud {
   private el = {
     o2Bar: $('o2-bar'), o2Val: $('o2-val'), enBar: $('en-bar'), enVal: $('en-val'),
-    lamp: $('lamp'), planet: $('planet-name'), clock: $('clock'), slots: $('slots'),
+    lamp: $('lamp'), inventory: $('inventory'), planet: $('planet-name'), clock: $('clock'), slots: $('slots'),
     hazard: $('hazard'), toast: $('toast'), hint: $('hint'),
   };
   private last = new Map<string, string>();
@@ -38,6 +38,14 @@ export class Hud {
 
     const lampText = `${state.lamp ? 'Lamp aan' : 'Lamp uit'}${state.lamp && lampIsDraining(darkness) ? ' · verbruikt' : ''} · F`;
     if (this.text(el.lamp, lampText)) el.lamp.style.color = state.lamp ? '#ffe9a0' : '';
+
+    const inv = state.inventory;
+    const items: string[] = [];
+    if (inv.scrap > 0) items.push(`Schroot ${inv.scrap}`);
+    if (inv.bottles > 0) items.push(`Fles ${inv.bottles} (Q)`);
+    if (inv.beacons > 0) items.push(`Baken ${inv.beacons} (R)`);
+    if (inv.armour) items.push('Pak versterkt');
+    this.text(el.inventory, items.join(' · '));
 
     const planet = state.world.planet;
     this.text(el.planet, `${planet.name} · ${planet.theme.colourName}`);

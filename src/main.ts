@@ -1,14 +1,17 @@
 import './style.css';
 import { Keyboard } from './core/input';
 import { unlockIfRepaired } from './game/campaign';
+import { craft } from './game/crafting';
 import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
 import { landOn, type GameState } from './game/state';
 import { travel, type Destination } from './game/travel';
 import { step } from './game/update';
+import { SoundBoard } from './render/audio';
 import { Hud } from './render/hud';
 import { Minimap } from './render/minimap';
 import { Renderer } from './render/renderer';
 import { StarMap } from './render/starmap';
+import { TitleScene } from './render/title';
 import { Tips } from './render/tips';
 import { PLANETS } from './world/planets';
 
@@ -17,11 +20,22 @@ const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) 
 const canvas = byId<HTMLCanvasElement>('screen');
 const overlay = byId<HTMLDivElement>('overlay');
 const renderer = new Renderer(canvas.getContext('2d')!);
+const titleScene = new TitleScene(canvas.getContext('2d')!);
+const gameEl = byId<HTMLDivElement>('game');
 const minimap = new Minimap(byId<HTMLCanvasElement>('minimap'));
 const hud = new Hud();
 const keyboard = new Keyboard();
-const starMap = new StarMap(pickDestination, resume);
+const starMap = new StarMap(pickDestination, resume, (id) => {
+  const result = craft(state, id);
+  if (!result.ok) hud.showToast(result.note);
+  else save();
+  starMap.open(state);
+});
 const tips = new Tips();
+const sound = new SoundBoard();
+// Browsers only allow audio after the player did something.
+window.addEventListener('pointerdown', () => sound.unlock());
+window.addEventListener('keydown', () => sound.unlock());
 
 const params = new URLSearchParams(location.search);
 const debug = import.meta.env.DEV || params.has('debug');
@@ -30,12 +44,21 @@ let state: GameState = landOn(0);
 /** Snapshot taken on landing. Dying rolls back to it. */
 let checkpoint: SaveData = toSaveData(state);
 let running = false;
+/** While true the animated title scene is drawn instead of the world, and the HUD is hidden. */
+let titleMode = false;
+let titleTheme = PLANETS[0].theme;
 /** The primary overlay button; Enter and Space press it. */
 let primaryAction: (() => void) | null = null;
 
 interface OverlayButton { label: string; action: () => void }
 
+function setTitleMode(on: boolean): void {
+  titleMode = on;
+  gameEl.classList.toggle('title-mode', on);
+}
+
 function showOverlay(title: string, hazard: string, sub: string, buttons: OverlayButton[]): void {
+  setTitleMode(false);
   byId('overlay-title').textContent = title;
   byId('overlay-hazard').textContent = hazard;
   byId('overlay-sub').textContent = sub;
@@ -106,6 +129,7 @@ function pickDestination(index: number, row: Destination): void {
     return;
   }
   starMap.hide();
+  sound.play('launch');
   if (result.state.status === 'escaped') {
     state = result.state;
     clearSave();
@@ -130,6 +154,13 @@ function confirmNewGame(): void {
 /** Title screen: continue a saved game, start a new one, switch tips on or off. */
 function title(): void {
   const saved = readSave();
+  const soundButton: OverlayButton = {
+    label: sound.muted ? 'Geluid: uit' : 'Geluid: aan',
+    action: () => {
+      sound.setMuted(!sound.muted);
+      title();
+    },
+  };
   const tipsButton: OverlayButton = {
     label: tips.enabled ? 'Tips: aan' : 'Tips: uit',
     action: () => {
@@ -141,7 +172,10 @@ function title(): void {
     showOverlay('Oxy8', '', 'Je bent neergestort. Houd je zuurstof op peil en repareer je schip.', [
       { label: 'Nieuw spel', action: newGame },
       tipsButton,
+      soundButton,
     ]);
+    titleTheme = PLANETS[0].theme;
+    setTitleMode(true);
     return;
   }
   const planet = PLANETS[saved.live.planetIndex];
@@ -153,7 +187,10 @@ function title(): void {
     } },
     { label: 'Nieuw spel', action: confirmNewGame },
     tipsButton,
+    soundButton,
   ]);
+  titleTheme = planet.theme;
+  setTitleMode(true);
 }
 
 function onDeath(): void {
@@ -192,6 +229,11 @@ function handleAppEvents(): void {
 }
 
 window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyM' && !e.repeat) {
+    sound.setMuted(!sound.muted);
+    hud.showToast(sound.muted ? 'Geluid uit' : 'Geluid aan');
+    return;
+  }
   if (!overlay.hidden && primaryAction && (e.code === 'Enter' || e.code === 'Space')) {
     // Let a focused button handle its own activation.
     if (document.activeElement instanceof HTMLButtonElement) return;
@@ -244,9 +286,12 @@ function frame(now: number): void {
     else if (state.status === 'stranded') onStranded();
   }
   tips.update(state, dt, running);
+  sound.handle(state.events);
+  sound.update(state, dt, running);
   for (const text of renderer.consumeEvents(state)) hud.showToast(text);
   renderer.update(state, dt);
-  renderer.draw(state);
+  if (titleMode) titleScene.draw(dt, titleTheme);
+  else renderer.draw(state);
   hud.update(state, dt, t);
   minimap.update(state, dt, t);
   requestAnimationFrame(frame);

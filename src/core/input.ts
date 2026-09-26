@@ -6,24 +6,33 @@ export interface InputState {
   interact: boolean;
   /** F was pressed this frame. */
   toggleLamp: boolean;
+  /** Q was pressed this frame: use an oxygen bottle. */
+  useBottle: boolean;
+  /** R was pressed this frame: place a decoy beacon. */
+  placeBeacon: boolean;
 }
 
-export const NO_INPUT: InputState = { moveX: 0, moveY: 0, interact: false, toggleLamp: false };
+export const NO_INPUT: InputState = { moveX: 0, moveY: 0, interact: false, toggleLamp: false, useBottle: false, placeBeacon: false };
+
+/** Keys that fire once per press, mapped to the InputState flag they set. */
+const ONE_SHOT = { KeyF: 'toggleLamp', KeyQ: 'useBottle', KeyR: 'placeBeacon' } as const;
+type OneShot = (typeof ONE_SHOT)[keyof typeof ONE_SHOT];
 
 const GAME_KEYS = new Set([
   'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyF',
+  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyF', 'KeyQ', 'KeyR',
 ]);
 
 export class Keyboard {
   private held = new Set<string>();
-  private lampPressed = false;
+  private pressed = new Set<OneShot>();
 
   constructor(target: Window = window) {
     target.addEventListener('keydown', (e) => {
       if (!GAME_KEYS.has(e.code)) return;
       e.preventDefault();
-      if (e.code === 'KeyF' && !e.repeat) this.lampPressed = true;
+      const shot = ONE_SHOT[e.code as keyof typeof ONE_SHOT];
+      if (shot && !e.repeat) this.pressed.add(shot);
       this.held.add(e.code);
     });
     target.addEventListener('keyup', (e) => this.held.delete(e.code));
@@ -37,9 +46,11 @@ export class Keyboard {
       moveX: (h('ArrowRight') || h('KeyD') ? 1 : 0) - (h('ArrowLeft') || h('KeyA') ? 1 : 0),
       moveY: (h('ArrowDown') || h('KeyS') ? 1 : 0) - (h('ArrowUp') || h('KeyW') ? 1 : 0),
       interact: h('KeyE'),
-      toggleLamp: this.lampPressed,
+      toggleLamp: this.pressed.has('toggleLamp'),
+      useBottle: this.pressed.has('useBottle'),
+      placeBeacon: this.pressed.has('placeBeacon'),
     };
-    this.lampPressed = false;
+    this.pressed.clear();
     return state;
   }
 }

@@ -5,7 +5,7 @@ import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
 import { radialGlow, rect, type Ctx } from './pixels';
-import { drawBunker, drawCreeper, drawCrystal, drawPlayer, drawPounceMarker, drawShip } from './sprites';
+import { drawBeacon, drawBunker, drawCreeper, drawCrystal, drawPlayer, drawPounceMarker, drawScrap, drawShip } from './sprites';
 
 const VW = CONFIG.view.width;
 const VH = CONFIG.view.height;
@@ -92,6 +92,8 @@ export class Renderer {
       drawList.push([ship.y, () => drawShip(ctx, ship.x - cx, ship.y - cy, t, world.planet.partsNeeded, state.partsInstalled)]);
     }
     for (const c of world.crystals) if (onScreen(c.x, c.y)) drawList.push([c.y, () => drawCrystal(ctx, c, c.x - cx, c.y - cy, t, theme)]);
+    for (const s of world.scrap) if (!s.taken && onScreen(s.x, s.y)) drawList.push([s.y, () => drawScrap(ctx, s, s.x - cx, s.y - cy, t)]);
+    for (const b of state.beacons) if (onScreen(b.x, b.y)) drawList.push([b.y, () => drawBeacon(ctx, b, Math.round(b.x - cx), Math.round(b.y - cy), t)]);
     for (const c of world.creepers) {
       if (onScreen(c.x, c.y)) drawList.push([c.y, () => drawCreeper(ctx, c, Math.round(c.x - cx), Math.round(c.y - cy), t, theme)]);
     }
@@ -158,6 +160,9 @@ export class Renderer {
     }
     for (const pool of world.pools) {
       if (onScreen(pool.x, pool.y)) radialGlow(ctx, pool.x - cx, pool.y - cy, pool.rx, '120,255,90', (0.14 + 0.05 * Math.sin(t * 2 + pool.x)) * darkness);
+    }
+    for (const b of state.beacons) {
+      if (onScreen(b.x, b.y)) radialGlow(ctx, b.x - cx, b.y - cy - 10, 14, '255,48,80', (Math.sin(t * 5) > 0 ? 0.7 : 0.25) * darkness);
     }
     for (const c of world.creepers) {
       if (onScreen(c.x, c.y)) {
