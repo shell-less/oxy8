@@ -6,6 +6,7 @@ import { updateHazards } from '../systems/hazards';
 import { updateInteraction } from '../systems/interaction';
 import { movePlayer, revealAround } from '../systems/movement';
 import { updateLamp, updateOxygen } from '../systems/survival';
+import { isStranded } from './campaign';
 import type { GameState } from './state';
 
 /** Advances the game by dt seconds. The order of the systems matters: hazards set the rules for this frame. */
@@ -31,6 +32,8 @@ export function step(state: GameState, input: InputState, dt: number): void {
   if (state.oxygen <= 0) {
     state.oxygen = 0;
     state.status = 'dead';
+  } else if (isStranded(state)) {
+    state.status = 'stranded';
   }
 
   const seesFar = state.lamp || darkness < 0.3;

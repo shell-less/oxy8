@@ -21,7 +21,8 @@ export type GameEvent =
   /** The player asked the ship for the star map. */
   | { type: 'starmap' };
 
-export type Status = 'playing' | 'dead' | 'escaped';
+/** 'stranded': too little energy to fly and no energy cells left on this planet. The game is over. */
+export type Status = 'playing' | 'dead' | 'stranded' | 'escaped';
 
 export interface Player {
   x: number;

@@ -151,6 +151,16 @@ function onDeath(): void {
   ]);
 }
 
+function onStranded(): void {
+  clearSave();
+  showOverlay(
+    'Gestrand',
+    '',
+    `Je energie is op en op ${state.world.planet.name} liggen geen energiecellen meer. Je schip komt hier niet meer weg.`,
+    [{ label: 'Nieuw spel', action: newGame }],
+  );
+}
+
 /** Handles events meant for the app rather than the renderer. */
 function handleAppEvents(): void {
   let progressed = false;
@@ -209,6 +219,7 @@ function frame(now: number): void {
     step(state, input, dt);
     handleAppEvents();
     if (state.status === 'dead') onDeath();
+    else if (state.status === 'stranded') onStranded();
   }
   for (const text of renderer.consumeEvents(state)) hud.showToast(text);
   renderer.update(state, dt);

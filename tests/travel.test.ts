@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../src/config';
 import { snapshotCampaign } from '../src/game/campaign';
 import { fromSaveData, readSave, toSaveData, writeSave, type KeyValueStore } from '../src/game/save';
+import { NO_INPUT } from '../src/core/input';
 import { landOn, type GameState } from '../src/game/state';
+import { step } from '../src/game/update';
 import { destinations, HOME_INDEX, travel } from '../src/game/travel';
 import { PLANETS } from '../src/world/planets';
 
@@ -122,6 +124,23 @@ describe('travel', () => {
     expect(back.explored[5]).toBe(1);
     expect(back.explored[4000]).toBe(1);
     expect(back.explored[6]).toBe(0);
+  });
+});
+
+describe('stranded', () => {
+  it('ends the game without energy to fly and no cells left here', () => {
+    const s = landOn(0, { energy: CONFIG.energy.flightCost - 1 });
+    s.world.creepers.length = 0;
+    for (const b of s.world.bunkers) b.energyCell = false;
+    step(s, NO_INPUT, 1 / 60);
+    expect(s.status).toBe('stranded');
+  });
+
+  it('is not stranded while energy cells are left on the planet', () => {
+    const s = landOn(0, { energy: 0 });
+    s.world.creepers.length = 0;
+    step(s, NO_INPUT, 1 / 60);
+    expect(s.status).toBe('playing');
   });
 });
 
