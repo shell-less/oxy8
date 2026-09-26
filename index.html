@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oxy8</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect x='2' y='1' width='4' height='4' fill='%23f2f5f8'/%3E%3Crect x='3' y='2' width='3' height='2' fill='%231c8fc4'/%3E%3Crect x='2' y='5' width='4' height='2' fill='%23e8edf2'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <main id="app">
+      <div id="game">
+        <canvas id="screen" width="320" height="180" tabindex="0" aria-label="Oxy8 speelveld"></canvas>
+
+        <section class="panel" id="stats" aria-label="Status">
+          <div>O2 <span class="bar"><i id="o2-bar"></i></span><span id="o2-val">100</span></div>
+          <div>EN <span class="bar"><i id="en-bar" class="energy"></i></span><span id="en-val">30</span></div>
+          <div id="lamp">Lamp aan · F</div>
+        </section>
+
+        <section class="panel" id="mission" aria-label="Missie">
+          <div id="planet-name"></div>
+          <div id="clock"></div>
+          <div>Onderdelen <span id="slots"></span></div>
+          <div id="hazard"></div>
+        </section>
+
+        <div class="panel" id="toast" role="status" aria-live="polite"></div>
+        <div class="panel" id="hint"></div>
+        <canvas class="panel" id="minimap" aria-label="Minikaart"></canvas>
+
+        <div id="overlay">
+          <div id="overlay-title">Oxy8</div>
+          <div id="overlay-hazard"></div>
+          <div id="overlay-sub">Klik om te landen</div>
+          <div id="overlay-keys">WASD of pijltjes: lopen · E vasthouden: openen en inbouwen · F: helmlamp</div>
+        </div>
+      </div>
+
+      <nav id="debug" hidden>
+        <button id="dbg-time" type="button">Tijd x20</button>
+        <button id="dbg-next" type="button">Volgende planeet</button>
+      </nav>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
