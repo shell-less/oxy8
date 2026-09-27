@@ -3,6 +3,7 @@ import type { InputState } from '../core/input';
 import { unlockIfRepaired } from '../game/campaign';
 import { emit, emitTo, isRepaired, looksLooted, shipOf, type GameState, type Player, type SupplyDrop, type Target } from '../game/state';
 import { PLANETS } from '../world/planets';
+import { bombInReach, defuse } from './bombs';
 
 /** 'launch' is race mode only: a repaired ship takes off and wins the race. */
 export type Action = 'install' | 'starmap' | 'launch' | 'open' | 'none';
@@ -17,8 +18,13 @@ export interface ActionInfo {
   duration: number;
 }
 
-/** The nearest bunker (or landed supply pod) in range, otherwise the ship if in range. */
+/**
+ * A bomb whose defuse ring the player stands in comes first; then the nearest bunker (or landed
+ * supply pod) in range; otherwise the ship if in range.
+ */
 export function findTarget(state: GameState, p: Player): Target | null {
+  const bomb = bombInReach(state, p);
+  if (bomb) return { kind: 'bomb', bomb };
   const { bunkerRange, shipRange } = CONFIG.interaction;
   let best: Target | null = null;
   let bestDist = Infinity;
@@ -59,6 +65,12 @@ export function describe(state: GameState, p: Player, target: Target | null): Ac
     else if (isRepaired(state, p)) status = PLANETS[state.planetIndex + 1] ? 'Motor klaar voor de volgende planeet' : 'Motor klaar voor de reis naar huis';
     else status = `Motor mist nog ${needed - p.partsInstalled} onderdelen`;
     return info(`${status} · [E] ${race ? 'Werkbank' : 'Schip: werkbank en sterrenkaart'}`, 'starmap', ia.starMapSeconds);
+  }
+
+  if (target.kind === 'bomb') {
+    const max = CONFIG.race.bomb.carryMax;
+    if (p.bombs >= max) return info('Bom: je draagt er al een, ontmantelen kan niet');
+    return info('[E] Bom ontmantelen', 'open', CONFIG.race.bomb.defuseSeconds);
   }
 
   if (target.kind === 'drop') {
@@ -111,8 +123,9 @@ export function updateInteraction(state: GameState, p: Player, input: InputState
 
 function sameTargetAs(a: Target | null, b: Target | null): boolean {
   if (!a || !b) return a === b;
-  if (a.kind !== 'bunker' || b.kind !== 'bunker') return a.kind === b.kind;
-  return a.bunker === b.bunker;
+  if (a.kind === 'bunker' && b.kind === 'bunker') return a.bunker === b.bunker;
+  if (a.kind === 'bomb' && b.kind === 'bomb') return a.bomb === b.bomb;
+  return a.kind === b.kind && a.kind !== 'bunker' && a.kind !== 'bomb';
 }
 
 /** Cells are only taken when all their energy fits, so none is wasted and the planet's budget holds. */
@@ -175,6 +188,10 @@ function perform(state: GameState, p: Player, target: Target, action: Action): v
 
   if (target.kind === 'drop') {
     openDrop(state, p, state.race!.drop);
+    return;
+  }
+  if (target.kind === 'bomb') {
+    defuse(state, p, target.bomb);
     return;
   }
 

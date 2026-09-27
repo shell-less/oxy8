@@ -201,6 +201,31 @@ export const CONFIG = {
     dropWarnSeconds: 10,
     /** Seconds the pod is seen falling before it lands. Visual only. */
     dropFallSeconds: 1.2,
+    /** Bombs: a trap for bunkers. Whoever steps on an armed bomb loses, the owner included. */
+    bomb: {
+      scrap: 4,
+      carryMax: 1,
+      /** A bomb can only be placed this close to a bunker, and never this close to a ship. */
+      placeNearBunker: 40,
+      shipKeepOut: 100,
+      /** Seconds after placing before it goes off; time to walk away. */
+      armSeconds: 3,
+      /** An armed bomb goes off when a player comes this close. Creepers never set it off. */
+      triggerRadius: 12,
+      /** Defuse by holding the action from this ring, just outside the trigger radius. */
+      defuseMin: 20,
+      defuseMax: 26,
+      defuseSeconds: 2,
+      /** A tiny red blink every blinkEvery seconds, visible within blinkRange of it. */
+      blinkEvery: 2.5,
+      blinkRange: 50,
+      /** A beep within beepRange that speeds up closer by (seconds between beeps, far and near). */
+      beepRange: 60,
+      beepSlow: 1.1,
+      beepFast: 0.25,
+      /** At night the helmet lamp makes a bomb glint within this distance. */
+      glintRange: 58,
+    },
     /** After this many seconds the race ends: most installed parts wins, then most energy, else a draw. */
     timeLimit: 720,
     /** Ships stand this far left and right of the centre, and up to shipOffsetY above or below it. */

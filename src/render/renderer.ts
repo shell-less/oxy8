@@ -5,7 +5,7 @@ import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
 import { radialGlow, rect, type Ctx } from './pixels';
-import { drawBeacon, drawBunker, drawCreeper, drawCrystal, drawDrop, drawPlayer, drawPounceMarker, drawScrap, drawSlideMarker, drawShip } from './sprites';
+import { drawBeacon, drawBomb, drawBunker, drawCreeper, drawCrystal, drawDrop, drawPlayer, drawPounceMarker, drawScrap, drawSlideMarker, drawShip } from './sprites';
 
 const VW = CONFIG.view.width;
 const VH = CONFIG.view.height;
@@ -88,6 +88,7 @@ export class Renderer {
     // Everything with height is sorted by its foot y, so things further down overlap things behind them.
     const onScreen = (x: number, y: number) => x > cx - 40 && x < cx + VW + 40 && y > cy - 40 && y < cy + VH + 40;
     const drawList: [number, () => void][] = [];
+    this.drawBombs(state, false);
     // A race bunker only looks empty to a player who knows it is.
     for (const b of world.bunkers) {
       if (!onScreen(b.x, b.y)) continue;
@@ -124,6 +125,7 @@ export class Renderer {
     this.drawProgress(state);
     if (darkness > 0.01) this.drawNight(state, darkness, onScreen);
     this.drawMeteorMarkers(state);
+    this.drawBombs(state, true, darkness);
     // Warnings are drawn above the night layer: a fair game shows the danger even in the dark.
     for (const c of world.creepers) {
       if (c.jump && onScreen(c.jump.toX, c.jump.toY)) drawPounceMarker(ctx, c, Math.round(c.jump.toX - cx), Math.round(c.jump.toY - cy), t);
@@ -132,11 +134,43 @@ export class Renderer {
     this.drawScreenEffects(state, hour, darkness);
   }
 
+  /**
+   * Race bombs as the viewed player may see them. The owner always sees their own. Anyone else
+   * only sees a bomb within blinkRange: a dark disc and, every blinkEvery seconds, a tiny red
+   * blink; at night their helmet lamp makes it glint. `lights` draws the blink and the glint,
+   * above the night layer; otherwise the bodies, on the ground.
+   */
+  private drawBombs(state: GameState, lights: boolean, darkness = 0): void {
+    const bombs = state.race?.bombs;
+    if (!bombs?.length) return;
+    const B = CONFIG.race.bomb;
+    const me = localPlayer(state);
+    const { ctx, camX: cx, camY: cy, t } = this;
+    for (const bomb of bombs) {
+      const x = Math.round(bomb.x - cx);
+      const y = Math.round(bomb.y - cy);
+      if (x < -20 || y < -20 || x > VW + 20 || y > VH + 20) continue;
+      const own = bomb.owner === me.id;
+      const d = Math.hypot(me.x - bomb.x, me.y - bomb.y);
+      const near = d <= B.blinkRange;
+      if (!own && !near) continue;
+      if (!lights) {
+        drawBomb(ctx, x, y, own, own ? Math.max(0, bomb.armIn) / B.armSeconds : 0);
+        continue;
+      }
+      const blinking = (t + bomb.id * 0.7) % B.blinkEvery < 0.14;
+      if (blinking && (near || own)) rect(ctx, x, y - 2, 1, 1, '#ff3040');
+      const glint = darkness > 0.2 && me.lamp && d <= B.glintRange && Math.sin(t * 5 + bomb.id) > 0.85;
+      if (glint && !own) rect(ctx, x - 1, y - 2, 1, 1, '#ffffff');
+    }
+  }
+
   private drawProgress(state: GameState): void {
     const me = localPlayer(state);
     const ia = me.interaction;
     if (ia.progress <= 0 || !ia.target) return;
-    const anchor = ia.target.kind === 'ship' ? shipOf(state, me) : ia.target.kind === 'drop' ? state.race!.drop : ia.target.bunker;
+    const t = ia.target;
+    const anchor = t.kind === 'ship' ? shipOf(state, me) : t.kind === 'drop' ? state.race!.drop : t.kind === 'bomb' ? { x: t.bomb.x, y: t.bomb.y + 20 } : t.bunker;
     const x = anchor.x - this.camX;
     const y = anchor.y - (ia.target.kind === 'ship' ? 30 : 34) - this.camY;
     rect(this.ctx, x - 10, y, 20, 3, '#0b0a14');

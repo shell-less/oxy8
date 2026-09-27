@@ -30,7 +30,8 @@ export type PlayerEvent = Extract<GameEvent, { player?: number }>;
 export type SoundName =
   | 'pickup' | 'part' | 'supply' | 'install' | 'repaired' | 'craft'
   | 'hurt' | 'bottle' | 'beacon' | 'deny' | 'lamp'
-  | 'pounce' | 'land' | 'slide' | 'storm-warning' | 'drop';
+  | 'pounce' | 'land' | 'slide' | 'storm-warning' | 'drop'
+  | 'bomb-place' | 'bomb-armed' | 'bomb-defused' | 'explosion';
 
 /**
  * 'stranded': too little energy to fly and no energy cells left on this planet. The game is over.
@@ -55,11 +56,22 @@ export interface SupplyDrop extends Point {
   energyCell: boolean;
 }
 
+/** A bomb lying next to a bunker. Armed once `armIn` reaches 0. */
+export interface Bomb extends Point {
+  id: number;
+  owner: number;
+  armIn: number;
+}
+
 export interface RaceState {
   /** Seconds since the race started. */
   elapsed: number;
   result: RaceResult | null;
   drop: SupplyDrop;
+  bombs: Bomb[];
+  nextBombId: number;
+  /** Ids of players who stepped on a bomb, for the result screen. */
+  blownUp: number[];
 }
 
 /**
@@ -97,6 +109,8 @@ export interface Player {
    * found them empty. Race bunkers never show whether they are empty; solo bunkers always do.
    */
   knownEmpty: number[];
+  /** Race mode: bombs carried, at most CONFIG.race.bomb.carryMax. Not part of the solo inventory or save. */
+  bombs: number;
 }
 
 export interface Meteor { x: number; y: number; timeLeft: number }
@@ -131,8 +145,8 @@ export interface HazardState {
   coldMultiplier: number;
 }
 
-/** 'drop' is the race supply pod. */
-export type Target = { kind: 'ship' } | { kind: 'bunker'; bunker: Bunker } | { kind: 'drop' };
+/** 'drop' is the race supply pod; 'bomb' is a bomb to defuse. */
+export type Target = { kind: 'ship' } | { kind: 'bunker'; bunker: Bunker } | { kind: 'drop' } | { kind: 'bomb'; bomb: Bomb };
 
 export interface InteractionState {
   target: Target | null;
@@ -213,7 +227,7 @@ export function startRace(matchSeed: number): GameState {
     planetIndex: PLANETS.findIndex((p) => p.theme === world.planet.theme),
     players: [newPlayer(0, world, spawn.x, spawn.y, energy), newPlayer(1, world, other.x, other.y, energy)],
     campaign: newCampaign(),
-    race: { elapsed: 0, result: null, drop: newDrop(world) },
+    race: { elapsed: 0, result: null, drop: newDrop(world), bombs: [], nextBombId: 0, blownUp: [] },
   };
 }
 
@@ -277,6 +291,7 @@ export function newPlayer(id: number, world: World, x: number, y: number, energy
     inPool: false,
     explored: new Uint8Array(world.tilesX * world.tilesY),
     knownEmpty: [],
+    bombs: 0,
   };
 }
 

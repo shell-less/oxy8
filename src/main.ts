@@ -289,8 +289,8 @@ function raceButton(): OverlayButton[] {
   return raceAvailable ? [{ label: 'Race (lokaal)', action: raceIntro }] : [];
 }
 
-const RACE_KEYS = 'Speler 1: WASD, E actie, F lamp, Q fles, R baken. '
-  + 'Speler 2: pijltjes, Enter actie, rechter Shift lamp, / fles, . baken. Tab wisselt het beeld.';
+const RACE_KEYS = 'Speler 1: WASD, E actie, F lamp, Q fles, R baken, B bom. '
+  + 'Speler 2: pijltjes, Enter actie, rechter Shift lamp, / fles, . baken, komma bom. Tab wisselt het beeld.';
 
 /** Explains a local race before it starts. Two players share one keyboard. */
 function raceIntro(): void {
@@ -327,12 +327,13 @@ function onRaceOver(): void {
   let text: string;
   if (result.winner === null) {
     heading = 'Gelijkspel';
-    text = result.reason === 'death' ? 'Jullie pakken liepen tegelijk leeg.' : 'De tijd is om en jullie staan gelijk.';
+    text = result.reason === 'death' ? 'Jullie gingen tegelijk dood.' : 'De tijd is om en jullie staan gelijk.';
   } else {
     const winner = name(result.winner);
     heading = `${winner} wint`;
     const loser = state.players.find((p) => p.id !== result.winner);
     if (result.reason === 'launch') text = `${winner} is als eerste opgestegen.`;
+    else if (result.reason === 'death' && loser && state.race?.blownUp.includes(loser.id)) text = `${name(loser.id)} liep op een bom.`;
     else if (result.reason === 'death') text = `Het pak van ${loser ? name(loser.id).toLowerCase() : 'de ander'} is leeg.`;
     else text = `De tijd is om. ${winner} heeft de meeste onderdelen ingebouwd, of bij gelijkstand de meeste energie.`;
   }

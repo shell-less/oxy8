@@ -11,9 +11,13 @@ export interface InputState {
   useBottle: boolean;
   /** R was pressed this frame: place a decoy beacon. */
   placeBeacon: boolean;
+  /** Race mode: the bomb key was pressed this frame. */
+  placeBomb: boolean;
 }
 
-export const NO_INPUT: InputState = { moveX: 0, moveY: 0, interact: false, toggleLamp: false, useBottle: false, placeBeacon: false };
+export const NO_INPUT: InputState = {
+  moveX: 0, moveY: 0, interact: false, toggleLamp: false, useBottle: false, placeBeacon: false, placeBomb: false,
+};
 
 /** Combines two input sources (keyboard and touch): movement adds up, buttons count when either is pressed. */
 export function mergeInput(a: InputState, b: InputState): InputState {
@@ -24,6 +28,7 @@ export function mergeInput(a: InputState, b: InputState): InputState {
     toggleLamp: a.toggleLamp || b.toggleLamp,
     useBottle: a.useBottle || b.useBottle,
     placeBeacon: a.placeBeacon || b.placeBeacon,
+    placeBomb: a.placeBomb || b.placeBomb,
   };
 }
 
@@ -50,6 +55,8 @@ interface Binding {
   toggleLamp: string;
   useBottle: string;
   placeBeacon: string;
+  /** Race only; solo has no bomb key. */
+  placeBomb?: string;
 }
 
 /** Solo: WASD or the arrows. */
@@ -60,17 +67,20 @@ const SOLO: Binding = {
 
 /** Two players on one keyboard: player 1 on the left hand, player 2 on the arrows and the keys around them. */
 export const SPLIT: readonly [Binding, Binding] = [
-  { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], interact: 'KeyE', toggleLamp: 'KeyF', useBottle: 'KeyQ', placeBeacon: 'KeyR' },
+  {
+    up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'],
+    interact: 'KeyE', toggleLamp: 'KeyF', useBottle: 'KeyQ', placeBeacon: 'KeyR', placeBomb: 'KeyB',
+  },
   {
     up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'],
-    interact: 'Enter', toggleLamp: 'ShiftRight', useBottle: 'Slash', placeBeacon: 'Period',
+    interact: 'Enter', toggleLamp: 'ShiftRight', useBottle: 'Slash', placeBeacon: 'Period', placeBomb: 'Comma',
   },
 ];
 
-const ONE_SHOT = ['toggleLamp', 'useBottle', 'placeBeacon'] as const;
+const ONE_SHOT = ['toggleLamp', 'useBottle', 'placeBeacon', 'placeBomb'] as const;
 
 const GAME_KEYS = new Set([SOLO, ...SPLIT].flatMap((b) => [
-  ...b.up, ...b.down, ...b.left, ...b.right, b.interact, b.toggleLamp, b.useBottle, b.placeBeacon,
+  ...b.up, ...b.down, ...b.left, ...b.right, b.interact, b.toggleLamp, b.useBottle, b.placeBeacon, ...(b.placeBomb ? [b.placeBomb] : []),
 ]));
 
 export class Keyboard {
@@ -112,8 +122,12 @@ export class Keyboard {
       toggleLamp: false,
       useBottle: false,
       placeBeacon: false,
+      placeBomb: false,
     };
-    for (const key of ONE_SHOT) input[key] = this.pressed.has(b[key]);
+    for (const key of ONE_SHOT) {
+      const code = b[key];
+      input[key] = code !== undefined && this.pressed.has(code);
+    }
     return input;
   }
 }

@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { checkCraft, RECIPES, type Recipe, type RecipeId } from '../game/crafting';
+import { checkCraft, recipesFor, type Recipe, type RecipeId } from '../game/crafting';
 import { localPlayer, type GameState } from '../game/state';
 import { destinations, HOME_INDEX, type Destination } from '../game/travel';
 import { PLANETS } from '../world/planets';
@@ -48,7 +48,7 @@ export class StarMap {
     const me = localPlayer(state);
     const focusedRecipe = (document.activeElement as HTMLElement | null)?.dataset.recipe;
     this.benchSub.textContent = `Schroot: ${me.inventory.scrap}`;
-    this.bench.replaceChildren(...RECIPES.map((r) => this.renderRecipe(state, r)));
+    this.bench.replaceChildren(...recipesFor(state.mode).map((r) => this.renderRecipe(state, r)));
     const race = state.mode === 'race';
     this.root.classList.toggle('race', race);
     this.title.textContent = race ? `Schip van speler ${state.viewer + 1}` : 'Schip';
@@ -131,7 +131,7 @@ export class StarMap {
   }
 }
 
-const RECIPE_COLOURS: Record<RecipeId, string> = { bottle: '#4fd8ff', beacon: '#ff5060', armour: '#e8edf2' };
+const RECIPE_COLOURS: Record<RecipeId, string> = { bottle: '#4fd8ff', beacon: '#ff5060', armour: '#e8edf2', bomb: '#c0303a' };
 
 function lootText(row: Destination): string {
   if (row.energyCells === null) return '';

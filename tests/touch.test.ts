@@ -42,7 +42,7 @@ describe('analog walking', () => {
 
   it('merges keyboard and touch', () => {
     const merged = mergeInput({ ...NO_INPUT, moveX: 1, interact: true }, { ...NO_INPUT, moveX: 0.5, moveY: -0.4, useBottle: true });
-    expect(merged).toEqual({ moveX: 1, moveY: -0.4, interact: true, toggleLamp: false, useBottle: true, placeBeacon: false });
+    expect(merged).toEqual({ moveX: 1, moveY: -0.4, interact: true, toggleLamp: false, useBottle: true, placeBeacon: false, placeBomb: false });
   });
 });
 

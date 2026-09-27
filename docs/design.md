@@ -162,7 +162,7 @@ The ships stand about 780 px from the centre, which is roughly 15 seconds of wal
 | Arming | 3 seconds after placing | Time to walk away. |
 | Trigger | Any player within 12 px, the owner included | Creepers do not trigger bombs; their patrols around bunkers would set them all off. |
 | Effect | Whoever triggers it loses the match | |
-| Defusing | Hold E for ~2 s from 20-26 px away, just outside the trigger radius | The bomb goes into your inventory (if you do not carry one already). |
+| Defusing | Hold E for ~2 s from 20-26 px away, just outside the trigger radius | The bomb goes into your inventory (if you do not carry one already). Standing in that ring, defusing comes before opening the bunker. |
 
 Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px; a faint beep within ~60 px that speeds up as you get closer; at night the helmet lamp makes a bomb glint. The owner sees their own bombs faintly. The strongest play: a bomb next to a bunker you already emptied, since the opponent cannot see that it is empty.
 
@@ -170,8 +170,8 @@ Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px
 
 Until the server exists, a race is played by two players on one keyboard. The title screen offers "Race (lokaal)" in development, with `?debug`, or with `?race` in the address; the live game does not show it otherwise.
 
-- **Player 1:** WASD, E action, F lamp, Q bottle, R beacon.
-- **Player 2:** arrows, Enter action, right Shift lamp, / bottle, . beacon.
+- **Player 1:** WASD, E action, F lamp, Q bottle, R beacon, B bomb.
+- **Player 2:** arrows, Enter action, right Shift lamp, / bottle, . beacon, comma bomb.
 - **Tab** switches the screen between the players: camera, HUD, minimap, tips and toasts follow whoever is shown. Both players can always move. Opening the workbench switches the screen to the player who opened it.
 
 Player 2's suit has a lime stripe instead of orange. The HUD names whose screen it is and counts down to the time limit. At the ship, a repaired engine offers "Opstijgen" (costs the flight energy) instead of the star map; the ship menu shows only the workbench. Race mode never writes the solo save.
@@ -200,7 +200,7 @@ Hidden information decides the architecture. If both browsers held the full stat
 3. Race rules, testable with two players on one keyboard, so balancing can start before there is a server. Split in three:
    - ~~3a. Local race: two players on one keyboard, Tab to switch, launch to win, every death loses, time limit, result screen.~~
    - ~~3b. Hidden empty bunkers and the supply drop.~~
-   - 3c. Bombs and defusing.
+   - ~~3c. Bombs and defusing.~~ The bomb is on the workbench in a race only; the result screen says when someone stepped on a bomb. Touch has no bomb button yet (step 5).
 4. Room server and room codes.
 5. Rematch, mobile testing, balance.
 

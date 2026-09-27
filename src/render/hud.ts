@@ -67,9 +67,12 @@ export class Hud {
 
     const inv = me.inventory;
     const items: string[] = [];
+    // Key hints only in solo on a keyboard: in a race the two players use different keys.
+    const key = (k: string) => (this.touch || state.race ? '' : ` (${k})`);
     if (inv.scrap > 0) items.push(`Schroot ${inv.scrap}`);
-    if (inv.bottles > 0) items.push(`Fles ${inv.bottles}${this.touch ? '' : ' (Q)'}`);
-    if (inv.beacons > 0) items.push(`Baken ${inv.beacons}${this.touch ? '' : ' (R)'}`);
+    if (inv.bottles > 0) items.push(`Fles ${inv.bottles}${key('Q')}`);
+    if (inv.beacons > 0) items.push(`Baken ${inv.beacons}${key('R')}`);
+    if (me.bombs > 0) items.push(`Bom ${me.bombs}`);
     if (inv.armour) items.push('Pak versterkt');
     this.text(el.inventory, items.join(' · '));
 

@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
 import { NO_INPUT, type InputState } from '../core/input';
+import { placeBomb, updateBombs } from '../systems/bombs';
 import { updateCreepers } from '../systems/creepers';
 import { updateHazards } from '../systems/hazards';
 import { updateInteraction } from '../systems/interaction';
@@ -32,10 +33,12 @@ export function step(state: GameState, input: InputState | readonly InputState[]
     movePlayer(state, player, moveX, moveY, CONFIG.player.speed * mods.speedMultiplier, dt);
     pickUpScrap(state, player);
     updateItems(state, player, own);
+    placeBomb(state, player, own);
     const extra = player.inPool ? CONFIG.hazards.toxic.extraDrainPerSecond : 0;
     updateOxygen(player, dt, mods.oxygenMultiplier, extra);
   }
   ageBeacons(state, dt);
+  updateBombs(state, dt);
 
   const aggroFor = (player: Player) => {
     const hiddenInDark = darkness > 0.3 && !player.lamp;
