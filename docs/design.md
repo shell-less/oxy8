@@ -180,10 +180,36 @@ Player 2's suit has a lime stripe instead of orange. The HUD names whose screen 
 
 Hidden information decides the architecture. If both browsers held the full state, the developer tools would show every bomb and every empty bunker. So the server is authoritative and sends each player only what they may see.
 
-- **Room server:** Node with Colyseus, running the same `step()` at a fixed 20 ticks per second. Clients send `InputState` and interpolate what they receive. Hosted on Azure Container Apps (WebSockets, scale to zero); AKS with Agones only if the number of rooms ever calls for it.
-- **Per-player view:** opponent bombs are sent only within their visibility radius, bunker contents only on opening.
-- **Joining:** a four-letter room code, no accounts. After a match, "Revanche" starts a new planet for the same two players.
-- **The game itself** stays on GitHub Pages.
+The game itself stays on GitHub Pages. The race server runs on **Cloudflare Workers with Durable Objects**, on the free plan. Colyseus on Azure Container Apps was the first idea; Cloudflare won because it is free for a project this size, has no server to manage and no minute-long cold start, and one Durable Object per room fits a room code exactly. The game logic has no dependencies, so the same `step()` runs there unchanged.
+
+**How a room works**
+
+- A Worker (`oxy8-race` on workers.dev) creates rooms and forwards connections. `POST /rooms` returns a new four-letter code (no look-alike letters such as O/0 or I/1); `GET /rooms/CODE` upgrades to a WebSocket and hands it to the Durable Object named CODE.
+- Each room is one Durable Object (`RaceRoom`) with three phases. **Waiting**: fewer than two players; it uses the WebSocket Hibernation API and no timers, so an open room costs nothing. **Playing**: both connected; it picks a match seed, runs `step()` at 20 ticks per second and sends each player a snapshot at every tick. **Over**: the tick stops; "Revanche" from both players starts a new planet with a new seed.
+- Clients send an input message only when their `InputState` changes, at most 10 per second. Incoming messages count against the free plan's 100,000 requests per day; outgoing messages are free. That leaves room for dozens of matches a day even if every message counts, and a 12-minute match keeps a room awake for about 92 GB-s of the 13,000 per day.
+- A player who drops out has 20 seconds to reconnect with the same room code; after that the other player wins.
+
+**What each player receives**
+
+The server is authoritative and never sends what a player may not see, so the developer tools reveal nothing. The per-player view is a pure function of `GameState` and a player id (`src/net/view.ts`), tested like the rest of the rules:
+
+- Their own player in full.
+- The opponent only when on or near their screen: position, facing, lamp, installed parts (visible on the ship).
+- Parts bunkers as empty only when this player knows (`knownEmpty`); supply bunkers and their energy cells as they are.
+- Bombs they own, and other bombs only within the blink radius.
+- Creepers, meteors, scrap, the supply drop, hazards and the clock as they are.
+- Only their own toasts and sounds (`isFor`), and world effects near them.
+
+The world layout is not sent: both clients generate it from the match seed. A snapshot only carries what changes.
+
+**The client**
+
+The browser does not simulate a network race. It keeps a mirror `GameState`: the world from the seed, dynamic parts overwritten by each snapshot, positions interpolated about 100 ms behind, so the renderer, HUD and minimap work unchanged. Own movement then feels about one round trip late; if that is too sluggish for a casual game, client-side prediction for the own astronaut comes after the first playtest, not before.
+
+**Code and deployment**
+
+- `src/net/`: the protocol types, the per-player view and the snapshot applier, shared by client and server. `server/`: the Worker, the Durable Object and `wrangler.jsonc`, with its own `package.json` so the game keeps no runtime dependencies. `wrangler dev` runs a room locally.
+- A GitHub Actions workflow deploys the server when `server/` or `src/` changes on `main`, with a Cloudflare API token and account id as repository secrets. The game reads the server address from `VITE_RACE_SERVER` at build time.
 
 ### Changes in the code
 
@@ -201,7 +227,10 @@ Hidden information decides the architecture. If both browsers held the full stat
    - ~~3a. Local race: two players on one keyboard, Tab to switch, launch to win, every death loses, time limit, result screen.~~
    - ~~3b. Hidden empty bunkers and the supply drop.~~
    - ~~3c. Bombs and defusing.~~ The bomb is on the workbench in a race only; the result screen says when someone stepped on a bomb. Touch has no bomb button yet (step 5).
-4. Room server and room codes.
+4. Room server and room codes, in three pull requests:
+   - 4a. Match core and per-player view: `src/net/`, pure and tested, no Cloudflare yet.
+   - 4b. The Worker and Durable Object, local runs with `wrangler dev`, the deploy workflow.
+   - 4c. The client: "Race online" on the title screen (make a room, join with a code), the mirror state with interpolation, disconnects and "Revanche".
 5. Rematch, mobile testing, balance.
 
 ## Roadmap
