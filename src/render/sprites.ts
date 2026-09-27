@@ -30,6 +30,24 @@ export function drawBunker(ctx: Ctx, b: Bunker, x: number, y: number, t: number)
 }
 
 /**
+ * A race bomb: a small dark disc, flat on the ground and hard to see. The owner sees it with a
+ * faint stripe; while it arms, a ring around it closes (`arming` 1 to 0). Lights are drawn
+ * separately by the renderer, above the night layer.
+ */
+export function drawBomb(ctx: Ctx, x: number, y: number, own: boolean, arming: number): void {
+  rect(ctx, x - 2, y - 1, 4, 2, '#1c1a1e');
+  rect(ctx, x - 1, y - 2, 2, 1, '#2a272c');
+  if (own) rect(ctx, x - 1, y - 1, 2, 1, '#6a5a2a');
+  if (arming > 0) {
+    const r = Math.max(3, Math.round(3 + 8 * arming));
+    rect(ctx, x - r, y, 1, 1, '#ff5060');
+    rect(ctx, x + r, y, 1, 1, '#ff5060');
+    rect(ctx, x, y - r, 1, 1, '#ff5060');
+    rect(ctx, x, y + r, 1, 1, '#ff5060');
+  }
+}
+
+/**
  * The race supply pod. `fall` runs from 1 (high in the sky) to 0 (landed): the pod drops onto
  * its growing shadow. A yellow light means the energy cell is inside, orange the part.
  */

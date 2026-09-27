@@ -1,3 +1,4 @@
+import { CONFIG } from '../config';
 import { isFor, localPlayer, type GameEvent, type GameState, type SoundName } from '../game/state';
 import { stormIntensity } from '../systems/hazards';
 
@@ -13,6 +14,7 @@ export class SoundBoard {
   private wind: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private beepTimer = 0;
+  private bombBeepTimer = 0;
   muted = readMuted();
 
   /** Create or resume the audio context. Safe to call often. */
@@ -69,6 +71,27 @@ export class SoundBoard {
     } else {
       this.beepTimer = 0;
     }
+    this.updateBombBeep(state, dt, running);
+  }
+
+  /** A faint, high beep near someone else's bomb, faster the closer you get. */
+  private updateBombBeep(state: GameState, dt: number, running: boolean): void {
+    const B = CONFIG.race.bomb;
+    const me = localPlayer(state);
+    let nearest = Infinity;
+    for (const bomb of state.race?.bombs ?? []) {
+      if (bomb.owner !== me.id) nearest = Math.min(nearest, Math.hypot(me.x - bomb.x, me.y - bomb.y));
+    }
+    if (!running || state.status !== 'playing' || nearest > B.beepRange) {
+      this.bombBeepTimer = 0;
+      return;
+    }
+    this.bombBeepTimer -= dt;
+    if (this.bombBeepTimer <= 0) {
+      const closeness = 1 - nearest / B.beepRange;
+      this.bombBeepTimer = B.beepSlow + (B.beepFast - B.beepSlow) * closeness;
+      this.tone(2400, 0.03, 'sine', 0.035 + 0.04 * closeness);
+    }
   }
 
   play(name: SoundName | 'impact' | 'launch' | 'land-ship' | 'click'): void {
@@ -88,6 +111,10 @@ export class SoundBoard {
       case 'pounce': this.tone(180, 0.25, 'triangle', 0.14, 0, 520); break;
       case 'land': this.tone(110, 0.12, 'sine', 0.25, 0, 50); this.noise(0.1, 0.1, 600); break;
       case 'slide': this.noise(0.9, 0.12, 6000, 900); this.tone(700, 0.4, 'triangle', 0.06, 0, 350); break;
+      case 'bomb-place': this.tone(300, 0.05, 'square', 0.08); this.tone(240, 0.06, 'square', 0.08, 0.07); break;
+      case 'bomb-armed': this.tone(1600, 0.04, 'square', 0.06); this.tone(1600, 0.04, 'square', 0.06, 0.09); this.tone(2100, 0.06, 'square', 0.06, 0.18); break;
+      case 'bomb-defused': this.arpeggio([784, 659, 523], 0.06, 'triangle', 0.12); break;
+      case 'explosion': this.noise(1.1, 0.45, 700); this.tone(60, 0.9, 'sine', 0.35, 0, 25); this.tone(140, 0.4, 'sawtooth', 0.12, 0, 40); break;
       case 'drop': this.noise(0.8, 0.25, 1800, 200); this.tone(90, 0.6, 'sine', 0.3, 0.5, 40); break;
       case 'storm-warning': this.noise(1.2, 0.08, 400, 1500); break;
       case 'impact': this.noise(0.6, 0.35, 500); this.tone(70, 0.5, 'sine', 0.3, 0, 30); break;

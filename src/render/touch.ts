@@ -109,6 +109,8 @@ export class TouchControls {
       toggleLamp: this.pressed.has('toggleLamp'),
       useBottle: this.pressed.has('useBottle'),
       placeBeacon: this.pressed.has('placeBeacon'),
+      // Race mode is keyboard-only for now; a touch bomb button comes with mobile race testing.
+      placeBomb: false,
     };
     this.pressed.clear();
     return input;

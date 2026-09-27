@@ -70,6 +70,24 @@ export const TIPS: readonly Tip[] = [
     modes: ['race'],
   },
   {
+    id: 'race-bomb-near',
+    text: 'Gepiep of een rood knipperlichtje? Daar ligt een bom. Kom niet te dichtbij. Houd op een paar passen afstand de actie vast om hem te ontmantelen.',
+    when: (s) => (s.race?.bombs ?? []).some((b) => b.owner !== me(s).id && near(s, b.x, b.y, CONFIG.race.bomb.beepRange)),
+    modes: ['race'],
+  },
+  {
+    id: 'race-bomb-carry',
+    text: 'Je hebt een bom. Leg hem vlak bij een bunker (speler 1: B, speler 2: komma). Na drie seconden staat hij scherp, ook voor jou.',
+    when: (s) => me(s).bombs > 0,
+    modes: ['race'],
+  },
+  {
+    id: 'race-bomb-craft',
+    text: `Met ${CONFIG.race.bomb.scrap} schroot maak je op de werkbank een bom. Een lege bunker met een bom ernaast is de gemeenste val: de ander ziet niet dat hij leeg is.`,
+    when: (s) => me(s).inventory.scrap >= CONFIG.race.bomb.scrap,
+    modes: ['race'],
+  },
+  {
     id: 'creeper',
     text: 'Kruipers kun je niet verslaan: een aanval scheurt je pak. Loop weg, ze zijn trager dan jij.',
     when: (s) => s.world.creepers.some((c) => near(s, c.x, c.y, CONFIG.tips.nearCreeper)),
@@ -107,7 +125,7 @@ export const TIPS: readonly Tip[] = [
     id: 'craft',
     text: 'Je hebt genoeg schroot om iets te maken. Houd E vast bij je schip en kies op de werkbank.',
     touchText: 'Je hebt genoeg schroot om iets te maken. Houd de actieknop vast bij je schip en kies op de werkbank.',
-    when: (s) => anyCraftable(me(s)),
+    when: (s) => anyCraftable(me(s), s.mode),
   },
   {
     id: 'bottle',

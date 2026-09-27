@@ -33,7 +33,8 @@ src/
                      campaign (per-planet progress, engine unlocks, leftovers), travel (star map rows,
                      flying), save (localStorage, validated, versioned, migrated), tutorial (tips and when to show them),
                      crafting (recipes and the workbench rules).
-  systems/           movement, interaction, creepers, hazards, survival, items (scrap pickup, bottle, beacons).
+  systems/           movement, interaction, creepers, hazards, survival, items (scrap pickup, bottle, beacons),
+                     bombs (race only: placing, arming, triggering, defusing).
                      Pure functions on GameState.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
                      ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench), tips and touch (on-screen controls, DOM).
