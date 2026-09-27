@@ -1,0 +1,18 @@
+{
+  "name": "oxy8-race-server",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Oxy8 race server: a Cloudflare Worker with one Durable Object per room.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260927.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.142.0"
+  }
+}

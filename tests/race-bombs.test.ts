@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../src/config';
-import { Keyboard, NO_INPUT, type InputState } from '../src/core/input';
+import { NO_INPUT, type InputState } from '../src/core/input';
+import { Keyboard } from '../src/render/keyboard';
 import { craft, recipesFor } from '../src/game/crafting';
 import { landOn, startRace, type GameState, type Player } from '../src/game/state';
 import { step } from '../src/game/update';
