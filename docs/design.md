@@ -166,6 +166,12 @@ The ships stand about 780 px from the centre, which is roughly 15 seconds of wal
 
 Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px; a faint beep within ~60 px that speeds up as you get closer; at night the helmet lamp makes a bomb glint. The owner sees their own bombs faintly. The strongest play: a bomb next to a bunker you already emptied, since the opponent cannot see that it is empty.
 
+### Playing online
+
+"Race online" on the title screen offers "Kamer maken" and "Meedoen met code". The maker sees the four-letter code large on the title scene and passes it on; the other types it in (any case, spaces allowed). The race starts the moment the second player is in, with a toast saying which side your ship is on. One player per device: WASD or arrows, E, F, Q, R and B for the bomb; touch works except for bombs.
+
+Online there is no pause, and the workbench does not stop the race. A dropped connection reconnects by itself for 20 seconds; the other player sees "De ander is weggevallen" and "De ander is terug". The result is told from your side ("Je wint", "Je liep op een bom") with "Revanche" and "Menu".
+
 ### Playing locally
 
 Until the server exists, a race is played by two players on one keyboard. The title screen offers "Race (lokaal)" in development, with `?debug`, or with `?race` in the address; the live game does not show it otherwise.
@@ -230,7 +236,7 @@ The browser does not simulate a network race. It keeps a mirror `GameState`: the
 4. Room server and room codes, in three pull requests:
    - 4a. Match core and per-player view: `src/net/`, pure and tested, no Cloudflare yet.
    - 4b. The Worker and Durable Object, local runs with `wrangler dev`, the deploy workflow.
-   - 4c. The client: "Race online" on the title screen (make a room, join with a code), the mirror state with interpolation, disconnects and "Revanche".
+   - ~~4c. The client: "Race online" on the title screen (make a room, join with a code), the mirror state with interpolation, disconnects and "Revanche".~~ Like the local race, it shows on the title screen only in development, with `?debug` or with `?race`, until it has been playtested.
 5. Rematch, mobile testing, balance.
 
 ## Roadmap

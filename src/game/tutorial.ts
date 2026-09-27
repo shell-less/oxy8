@@ -42,7 +42,7 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'race-switch',
     text: 'Tab wisselt het beeld tussen speler 1 en speler 2. Allebei kunnen jullie altijd lopen.',
-    when: (_, ctx) => ctx.secondsOnPlanet > CONFIG.tips.firstDelay,
+    when: (s, ctx) => !s.race?.online && ctx.secondsOnPlanet > CONFIG.tips.firstDelay,
     modes: ['race'],
   },
   {
@@ -77,7 +77,7 @@ export const TIPS: readonly Tip[] = [
   },
   {
     id: 'race-bomb-carry',
-    text: 'Je hebt een bom. Leg hem vlak bij een bunker (speler 1: B, speler 2: komma). Na drie seconden staat hij scherp, ook voor jou.',
+    text: 'Je hebt een bom. Leg hem met B vlak bij een bunker (speler 2 aan hetzelfde toetsenbord: komma). Na drie seconden staat hij scherp, ook voor jou.',
     when: (s) => me(s).bombs > 0,
     modes: ['race'],
   },

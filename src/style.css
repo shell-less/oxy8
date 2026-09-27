@@ -182,6 +182,21 @@ html, body { margin: 0; height: 100%; }
   z-index: 2;
 }
 #starmap[hidden] { display: none; }
+#overlay-input {
+  font: inherit;
+  font-size: 1.6em;
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+  width: 7em;
+  margin: 0.6em auto 0;
+  padding: 0.2em 0.4em;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--panel-line);
+  border-radius: 4px;
+}
+#overlay-input[hidden] { display: none; }
 /* The solo key legend does not fit a race: the race intro names both players' keys. */
 #game.race #keys, #game.race #overlay-keys { display: none; }
 /* A race has no star map: the ship menu is only the workbench. */
@@ -240,6 +255,9 @@ html, body { margin: 0; height: 100%; }
   padding-bottom: 7%;
 }
 #game.title-mode #overlay-title { display: none; }
+/* Online lobby screens sit on the title scene but keep their heading: it carries the room code. */
+#game.title-mode.lobby #overlay-title { display: block; }
+#game.title-mode.lobby #overlay-keys { display: none; }
 #game.title-mode #overlay-sub { color: var(--ink); }
 #game.title-mode .btn { background: rgba(6, 4, 16, 0.75); }
 #game.title-mode #overlay-keys { background: rgba(6, 4, 16, 0.6); padding: 0.2em 0.6em; border-radius: 4px; }

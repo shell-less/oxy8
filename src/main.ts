@@ -1,12 +1,12 @@
 import { CONFIG } from './config';
 import './style.css';
 import { darknessAt, formatClock, hourOf } from './core/clock';
-import { mergeInput } from './core/input';
+import { mergeInput, NO_INPUT } from './core/input';
 import { Keyboard } from './render/keyboard';
 import { unlockIfRepaired } from './game/campaign';
 import { craft } from './game/crafting';
 import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
-import { landOn, localPlayer, startRace, type GameState } from './game/state';
+import { landOn, localPlayer, startRace, type GameState, type RaceResult } from './game/state';
 import { travel, type Destination } from './game/travel';
 import { step } from './game/update';
 import { SoundBoard } from './render/audio';
@@ -19,6 +19,8 @@ import { TitleScene } from './render/title';
 import { Tips } from './render/tips';
 import { InputMode, TouchControls } from './render/touch';
 import { PLANETS } from './world/planets';
+import { normaliseRoomCode } from './net/codes';
+import { OnlineRace, type OnlineEvents } from './online/connection';
 
 const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -32,6 +34,12 @@ const hud = new Hud();
 hud.restoreKeysVisible();
 const keyboard = new Keyboard();
 const starMap = new StarMap(pickDestination, resume, (id) => {
+  if (online) {
+    // The server crafts; the workbench shows the result once the next snapshot is in.
+    online.craft(id);
+    setTimeout(() => { if (starMap.isOpen) starMap.open(state); }, 250);
+    return;
+  }
   const result = craft(state, id);
   if (!result.ok) hud.showToast(result.note);
   else save();
@@ -58,6 +66,8 @@ const debug = import.meta.env.DEV || params.has('debug');
 const raceAvailable = debug || params.has('race');
 
 let state: GameState = landOn(0);
+/** The connection while in a network race; null otherwise. */
+let online: OnlineRace | null = null;
 /** Snapshot taken on landing. Dying rolls back to it. */
 let checkpoint: SaveData = toSaveData(state);
 let running = false;
@@ -69,13 +79,19 @@ let primaryAction: (() => void) | null = null;
 
 interface OverlayButton { label: string; action: () => void }
 
-function setTitleMode(on: boolean): void {
+function setTitleMode(on: boolean, lobby = false): void {
   titleMode = on;
   gameEl.classList.toggle('title-mode', on);
+  gameEl.classList.toggle('lobby', on && lobby);
 }
 
-function showOverlay(title: string, hazard: string, sub: string, buttons: OverlayButton[]): void {
+/** Shows a dialog. `input` adds a text field (a room code) with that placeholder; read it with overlayInput(). */
+function showOverlay(title: string, hazard: string, sub: string, buttons: OverlayButton[], input?: string): void {
   setTitleMode(false);
+  const field = byId<HTMLInputElement>('overlay-input');
+  field.hidden = input === undefined;
+  field.placeholder = input ?? '';
+  field.value = '';
   byId('overlay-title').textContent = title;
   byId('overlay-hazard').textContent = hazard;
   byId('overlay-sub').textContent = sub;
@@ -91,6 +107,11 @@ function showOverlay(title: string, hazard: string, sub: string, buttons: Overla
   primaryAction = buttons[0]?.action ?? null;
   overlay.hidden = false;
   running = false;
+  if (input !== undefined) field.focus();
+}
+
+function overlayInput(): string {
+  return byId<HTMLInputElement>('overlay-input').value;
 }
 
 function hideOverlay(): void {
@@ -214,6 +235,10 @@ function goFullscreen(): void {
 
 /** Pause menu, opened with the pause button on touch screens or P on a keyboard. */
 function pauseMenu(): void {
+  if (online) {
+    hud.showToast('Een online race gaat door, pauzeren kan niet');
+    return;
+  }
   const toggle = (label: string, on: boolean, flip: () => void): OverlayButton => ({
     label: `${label}: ${on ? 'aan' : 'uit'}`,
     action: () => {
@@ -287,7 +312,82 @@ function title(): void {
 }
 
 function raceButton(): OverlayButton[] {
-  return raceAvailable ? [{ label: 'Race (lokaal)', action: raceIntro }] : [];
+  return raceAvailable ? [{ label: 'Race online', action: onlineMenu }, { label: 'Race (lokaal)', action: raceIntro }] : [];
+}
+
+/** What the connection shows on screen. */
+const onlineEvents: OnlineEvents = {
+  waiting(code) {
+    lobby(`Kamer ${code}`, 'Geef deze code aan de ander.', 'Zodra die meedoet, begint de race.', [
+      { label: 'Annuleren', action: leaveOnline },
+    ]);
+  },
+  start(mirror, seat) {
+    state = mirror;
+    const planet = state.world.planet;
+    music.setMood(planet.theme.id);
+    hideOverlay();
+    setTitleMode(false);
+    running = true;
+    tips.landed();
+    hud.showToast(`Race op ${planet.name}. Jouw schip staat ${seat === 0 ? 'links' : 'rechts'}`);
+    canvas.focus();
+  },
+  notice(text) {
+    hud.showToast(text);
+  },
+  rematchAsked() {
+    if (state.status === 'over' && !overlay.hidden) byId('overlay-sub').textContent += ' De ander wil een revanche.';
+    else hud.showToast('De ander wil een revanche');
+  },
+  failed(text) {
+    online = null;
+    lobby('Race online', '', text, [{ label: 'Terug', action: title }]);
+  },
+};
+
+/** A screen before an online race starts: over the title scene, like the menu. */
+function lobby(heading: string, hazard: string, sub: string, buttons: OverlayButton[], input?: string): void {
+  showOverlay(heading, hazard, sub, buttons, input);
+  setTitleMode(true, true);
+}
+
+/** Race online: make a room and share its code, or join one with a code. */
+function onlineMenu(): void {
+  lobby('Race online', 'Twee spelers, elk op een eigen scherm.', `Bouw als eerste ${CONFIG.race.partsToWin} onderdelen in en stijg op. Wie doodgaat, verliest. WASD of pijltjes, E actie, F lamp, Q fles, R baken, B bom.`, [
+    { label: 'Kamer maken', action: createRoom },
+    { label: 'Meedoen met code', action: joinRoom },
+    { label: 'Terug', action: title },
+  ]);
+}
+
+function createRoom(): void {
+  lobby('Kamer maken', '', 'Even geduld…', []);
+  OnlineRace.create(onlineEvents)
+    .then((race) => { online = race; })
+    .catch(() => lobby('Race online', '', 'De raceserver is niet bereikbaar. Probeer het straks nog eens.', [{ label: 'Terug', action: onlineMenu }]));
+}
+
+function joinRoom(): void {
+  const submit = () => {
+    const code = normaliseRoomCode(overlayInput());
+    if (!code) {
+      hud.showToast('Een kamercode heeft vier letters');
+      return;
+    }
+    lobby(`Kamer ${code}`, '', 'Verbinden…', [{ label: 'Annuleren', action: leaveOnline }]);
+    online = OnlineRace.join(code, onlineEvents);
+  };
+  lobby('Meedoen', '', 'Typ de code die je van de ander kreeg.', [
+    { label: 'Meedoen', action: submit },
+    { label: 'Terug', action: onlineMenu },
+  ], 'ABCD');
+}
+
+function leaveOnline(): void {
+  online?.close();
+  online = null;
+  title();
 }
 
 const RACE_KEYS = 'Speler 1: WASD, E actie, F lamp, Q fles, R baken, B bom. '
@@ -323,6 +423,10 @@ function newRace(seed = Math.floor(Math.random() * 1e9)): void {
 function onRaceOver(): void {
   const result = state.race?.result;
   if (!result) return;
+  if (online) {
+    onlineRaceOver(online, result);
+    return;
+  }
   const name = (id: number) => `Speler ${id + 1}`;
   let heading: string;
   let text: string;
@@ -342,6 +446,35 @@ function onRaceOver(): void {
   showOverlay(heading, '', text, [
     { label: 'Nieuwe race', action: () => newRace() },
     { label: 'Menu', action: title },
+  ]);
+}
+
+/** The result of a network race, told from this player's side, with a rematch. */
+function onlineRaceOver(race: OnlineRace, result: RaceResult): void {
+  const me = race.seat;
+  let heading: string;
+  let text: string;
+  if (result.winner === null) {
+    heading = 'Gelijkspel';
+    text = result.reason === 'death' ? 'Jullie gingen tegelijk dood.' : 'De tijd is om en jullie staan gelijk.';
+  } else {
+    const won = result.winner === me;
+    heading = won ? 'Je wint' : 'Je verliest';
+    const blownUp = state.race?.blownUp.includes(won ? 1 - me : me);
+    if (result.reason === 'launch') text = won ? 'Je bent als eerste opgestegen.' : 'De ander is als eerste opgestegen.';
+    else if (result.reason === 'left') text = 'De ander kwam niet meer terug.';
+    else if (result.reason === 'time') text = won ? 'De tijd is om en jij hebt de meeste onderdelen ingebouwd.' : 'De tijd is om en de ander heeft meer ingebouwd.';
+    else if (won) text = blownUp ? 'De ander liep op een bom.' : 'Het pak van de ander is leeg.';
+    else text = blownUp ? 'Je liep op een bom.' : 'Je pak is leeg.';
+  }
+  if (result.reason === 'launch') sound.play('launch');
+  const again = result.reason !== 'left';
+  showOverlay(heading, '', text, [
+    ...(again ? [{ label: 'Revanche', action: () => {
+      race.rematch();
+      byId('overlay-sub').textContent = `${text} Wachten tot de ander ook revanche wil…`;
+    } }] : []),
+    { label: 'Menu', action: leaveOnline },
   ]);
 }
 
@@ -383,7 +516,8 @@ function handleAppEvents(): void {
   }
   if (progressed) save();
   if (openMap) {
-    running = false;
+    // Online the race goes on while the workbench is open; locally the game waits.
+    if (!online) running = false;
     starMap.open(state);
   }
 }
@@ -398,11 +532,13 @@ window.addEventListener('keydown', (e) => {
     leaveSplash();
     return;
   }
+  // Typing a room code: only Enter (to submit) counts.
+  if (e.target instanceof HTMLInputElement && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
   if (e.code === 'KeyP' && !e.repeat && running) {
     pauseMenu();
     return;
   }
-  if (e.code === 'Tab' && running && state.mode === 'race') {
+  if (e.code === 'Tab' && running && state.mode === 'race' && !online) {
     e.preventDefault();
     if (e.repeat) return;
     state.viewer = (state.viewer + 1) % state.players.length;
@@ -424,7 +560,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   // Ignore held keys: player 2 acts with Enter, and a held Enter must not click through the race result.
-  if (!overlay.hidden && primaryAction && !e.repeat && (e.code === 'Enter' || e.code === 'Space')) {
+  if (!overlay.hidden && primaryAction && !e.repeat && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
     // Let a focused button handle its own activation.
     if (document.activeElement instanceof HTMLButtonElement) return;
     e.preventDefault();
@@ -435,7 +571,7 @@ window.addEventListener('keydown', (e) => {
 if (debug) {
   byId('debug').hidden = false;
   // For poking around in the browser console: oxy8.state()
-  Object.assign(window, { oxy8: { state: () => state, sound, music } });
+  Object.assign(window, { oxy8: { state: () => state, online: () => online, sound, music } });
   const timeBtn = byId<HTMLButtonElement>('dbg-time');
   timeBtn.addEventListener('click', () => {
     state.timeScale = state.timeScale === 1 ? 20 : 1;
@@ -476,17 +612,29 @@ function frame(now: number): void {
   last = now;
   t += dt;
   // Turning a phone upright pauses the game; the page asks to turn it back.
-  if (running && inputMode.touch && portrait.matches) pauseMenu();
+  if (running && inputMode.touch && portrait.matches && !online) pauseMenu();
   touch.setActive(running && inputMode.touch);
   gameEl.classList.toggle('race', state.mode === 'race' && !titleMode);
-  // A local race reads two players from one keyboard; touch controls are for solo play for now.
-  const input = state.mode === 'race' ? keyboard.pollSplit() : mergeInput(keyboard.poll(), touch.poll());
-  if (running) {
+  if (online && online.state === state) {
+    // A network race: the server simulates, this browser sends input and draws the mirror.
+    const input = mergeInput(keyboard.poll(), touch.poll());
+    if (running) {
+      online.update(starMap.isOpen ? NO_INPUT : input, now / 1000);
+      handleAppEvents();
+      if (state.status === 'over') onRaceOver();
+    }
+  } else if (running) {
+    // A local race reads two players from one keyboard; touch controls are for solo play for now.
+    const input = state.mode === 'race' ? keyboard.pollSplit() : mergeInput(keyboard.poll(), touch.poll());
     step(state, input, dt);
     handleAppEvents();
     if (state.status === 'dead') onDeath();
     else if (state.status === 'stranded') onStranded();
     else if (state.status === 'over') onRaceOver();
+  } else {
+    // Not playing: drop key presses, so none fires when the game resumes.
+    keyboard.poll();
+    touch.poll();
   }
   tips.update(state, dt, running);
   sound.handle(state.events, state.viewer);

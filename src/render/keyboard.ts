@@ -19,10 +19,10 @@ interface Binding {
   placeBomb?: string;
 }
 
-/** Solo: WASD or the arrows. */
+/** One player per keyboard (solo, or an online race): WASD or the arrows. B places a bomb in a race. */
 const SOLO: Binding = {
   up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
-  interact: 'KeyE', toggleLamp: 'KeyF', useBottle: 'KeyQ', placeBeacon: 'KeyR',
+  interact: 'KeyE', toggleLamp: 'KeyF', useBottle: 'KeyQ', placeBeacon: 'KeyR', placeBomb: 'KeyB',
 };
 
 /** Two players on one keyboard: player 1 on the left hand, player 2 on the arrows and the keys around them. */
@@ -50,6 +50,8 @@ export class Keyboard {
 
   constructor(target: Window = window) {
     target.addEventListener('keydown', (e) => {
+      // Typing in a text field (a room code) is not playing.
+      if (isTextField(e.target)) return;
       if (!GAME_KEYS.has(e.code)) return;
       e.preventDefault();
       if (!e.repeat) this.pressed.add(e.code);
@@ -90,4 +92,8 @@ export class Keyboard {
     }
     return input;
   }
+}
+
+function isTextField(target: EventTarget | null): boolean {
+  return typeof HTMLInputElement !== 'undefined' && target instanceof HTMLInputElement;
 }

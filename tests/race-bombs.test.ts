@@ -193,7 +193,7 @@ describe('defusing a bomb', () => {
 });
 
 describe('bomb keys', () => {
-  it('are B for player 1 and comma for player 2, and solo has none', () => {
+  it('are B for player 1 (and for one player per keyboard) and comma for player 2', () => {
     const listeners: ((e: unknown) => void)[] = [];
     const target = { addEventListener: (type: string, fn: (e: unknown) => void) => { if (type === 'keydown') listeners.push(fn); } };
     const kb = new Keyboard(target as unknown as Window);
@@ -204,6 +204,6 @@ describe('bomb keys', () => {
     expect(one.placeBomb).toBe(true);
     expect(two.placeBomb).toBe(true);
     press('KeyB');
-    expect(kb.poll().placeBomb).toBe(false);
+    expect(kb.poll().placeBomb).toBe(true);
   });
 });
