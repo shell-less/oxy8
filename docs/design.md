@@ -116,6 +116,75 @@ All sound is synthesised with Web Audio in `src/render/audio.ts`: no audio files
 
 Background music is generated live too (`src/render/music.ts`): a soft pad, a bass note and a sparse arpeggio with echo, looping over a four-chord progression. Every mood has its own key, scale and tempo: the title (D minor, wide), Kepler-442 (A dorian, a bit of drive), Nereid-117 (E minor, slow and glassy), Umbra-9 (C phrygian, eerie) and Viridia (G harmonic minor, 104 bpm). Viridia is the finale and gets an extra rhythm layer: a soft kick, off-beat hats and a pulsing bass, mixed to the same peak level as the other moods. Music crossfades when you land somewhere else, gets darker at night and softer in menus. N or the title screen switches music off; M still mutes everything.
 
+## Race mode (designed, not built)
+
+A two-player versus mode. Solo play stays as it is and keeps working offline; race is an extra mode that needs a server.
+
+### The match
+
+Two players land at opposite ends of one planet, each next to their own ship. The planet type is picked at random from the four (with its hazard and its creepers), and the layout comes from a fresh match seed. There is enough for one ship to leave, not for two. The first player to install all parts and launch wins. Every death loses the match: oxygen running out, creepers, meteors or a bomb. If both players die in the same moment, the match is a draw.
+
+### Scarcity: one short of two
+
+| | Per player needed | On the planet | Why |
+| --- | --- | --- | --- |
+| Parts | 4 | 7 parts bunkers, one part each | Any split of 7 gives one player at least 4, so the race is about the majority. |
+| Energy | 90 (4 installs x 20 + flight 10) | 30 at the start each, 3 cells of 35 | Two cells get one player out with a little lamp slack; both would need four. |
+
+A deadlock is still possible (one player has the parts, the other the energy). Two things end it:
+
+- **Supply drop.** At the start of the second night a pod lands in the centre, marked on both minimaps. It holds one part and one energy cell.
+- **Time limit.** After about 12 minutes the player with the most installed parts wins; energy breaks a tie, then it is a draw.
+
+### A fair, mirrored planet
+
+Race planets are point-symmetric around the centre: every bunker, rock, crystal, scrap piece and creeper route has a mirror on the other side, and the ships stand mirrored too. With an odd number of parts bunkers and energy cells, one of each sits exactly in the centre, the most contested spot on the map. Size about 120 x 80 tiles (the solo planets are 90 x 60); a player reaches the centre in about a minute. Both clients generate the same world from the match seed.
+
+### Hidden and visible information
+
+- **Parts bunkers never show whether they are empty.** You only learn it after holding E for the full opening time ("Leeg"); the wasted time is the cost.
+- Your own minimap marks the bunkers you looted, so only the opponent's moves are a guess.
+- **Energy cells stay visible** (the yellow light on a supply bunker), so cells turn into a visible sprint.
+- The opponent is visible when on screen, not on the minimap.
+
+### Bombs
+
+| Rule | Value | Why |
+| --- | --- | --- |
+| Recipe | 4 scrap on the workbench, carry at most 1 | 10 scrap on the planet makes scrap contested; about two bombs per match. |
+| Placing | Only within ~40 px of a bunker, never near a ship | A trap for bunkers, not a way to lock someone in. |
+| Arming | 3 seconds after placing | Time to walk away. |
+| Trigger | Any player within 12 px, the owner included | Creepers do not trigger bombs; their patrols around bunkers would set them all off. |
+| Effect | Whoever triggers it loses the match | |
+| Defusing | Hold E for ~2 s from 20-26 px away, just outside the trigger radius | The bomb goes into your inventory (if you do not carry one already). |
+
+Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px; a faint beep within ~60 px that speeds up as you get closer; at night the helmet lamp makes a bomb glint. The owner sees their own bombs faintly. The strongest play: a bomb next to a bunker you already emptied, since the opponent cannot see that it is empty.
+
+### Technology
+
+Hidden information decides the architecture. If both browsers held the full state, the developer tools would show every bomb and every empty bunker. So the server is authoritative and sends each player only what they may see.
+
+- **Room server:** Node with Colyseus, running the same `step()` at a fixed 20 ticks per second. Clients send `InputState` and interpolate what they receive. Hosted on Azure Container Apps (WebSockets, scale to zero); AKS with Agones only if the number of rooms ever calls for it.
+- **Per-player view:** opponent bombs are sent only within their visibility radius, bunker contents only on opening.
+- **Joining:** a four-letter room code, no accounts. After a match, "Revanche" starts a new planet for the same two players.
+- **The game itself** stays on GitHub Pages.
+
+### Changes in the code
+
+- `GameState` gets `players[]` and two ships instead of one `player`; oxygen, energy, inventory and parts move per player. Creepers chase the nearest player.
+- `mode: 'solo' | 'race'` with its numbers in `CONFIG.race`.
+- A mirrored generator for race planets.
+- A network input source next to keyboard and touch; a bomb button on touch and B on the keyboard.
+- Tips for race-only mechanics (hidden bunkers, bombs, defusing, the supply drop).
+
+### Build order
+
+1. Refactor the state to several players, with no visible change to solo play.
+2. Mirrored race generation.
+3. Race rules: hidden bunkers, bombs and defusing, supply drop, win and loss. Testable with two players on one keyboard, so balancing can start before there is a server.
+4. Room server and room codes.
+5. Rematch, mobile testing, balance.
+
 ## Roadmap
 
 1. ~~Project setup: Vite, TypeScript, CI, GitHub Pages~~
@@ -126,6 +195,7 @@ Background music is generated live too (`src/render/music.ts`): a soft pad, a ba
 6. ~~Polish: sound, title screen, balance~~
 7. ~~Gliders on Nereid-117, Viridia as planet 4 with every kind of creeper, its own music, title music from the first click~~
 8. ~~Touch controls for phones and tablets~~
+9. Race mode (two players, one planet): designed, see above
 
 ## Open questions
 
