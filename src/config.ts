@@ -195,6 +195,8 @@ export const CONFIG = {
     /** Supply bunkers with a creeper patrol, besides every parts bunker: the mirrored pair with cells. */
     guardedSupplyBunkers: 2,
     startEnergy: 30,
+    /** After this many seconds the race ends: most installed parts wins, then most energy, else a draw. */
+    timeLimit: 720,
     /** Ships stand this far left and right of the centre, and up to shipOffsetY above or below it. */
     shipOffsetX: 780,
     shipOffsetY: 220,

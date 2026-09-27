@@ -53,6 +53,8 @@ window.addEventListener('keydown', () => sound.unlock());
 
 const params = new URLSearchParams(location.search);
 const debug = import.meta.env.DEV || params.has('debug');
+/** Race mode is still being built: only in development, with ?debug, or with ?race in the address. */
+const raceAvailable = debug || params.has('race');
 
 let state: GameState = landOn(0);
 /** Snapshot taken on landing. Dying rolls back to it. */
@@ -257,6 +259,7 @@ function title(): void {
   if (!saved) {
     showOverlay('Oxy8', '', 'Je bent neergestort. Houd je zuurstof op peil en repareer je schip.', [
       { label: 'Nieuw spel', action: newGame },
+      ...raceButton(),
       tipsButton,
       soundButton,
       musicButton,
@@ -273,12 +276,71 @@ function title(): void {
       briefing();
     } },
     { label: 'Nieuw spel', action: confirmNewGame },
+    ...raceButton(),
     tipsButton,
     soundButton,
     musicButton,
   ]);
   titleTheme = planet.theme;
   setTitleMode(true);
+}
+
+function raceButton(): OverlayButton[] {
+  return raceAvailable ? [{ label: 'Race (lokaal)', action: raceIntro }] : [];
+}
+
+const RACE_KEYS = 'Speler 1: WASD, E actie, F lamp, Q fles, R baken. '
+  + 'Speler 2: pijltjes, Enter actie, rechter Shift lamp, / fles, . baken. Tab wisselt het beeld.';
+
+/** Explains a local race before it starts. Two players share one keyboard. */
+function raceIntro(): void {
+  showOverlay(
+    'Race',
+    'Twee spelers, een planeet, onderdelen voor een schip.',
+    `Bouw als eerste ${CONFIG.race.partsToWin} onderdelen in en stijg op. Wie doodgaat, verliest. ${RACE_KEYS}`,
+    [
+      { label: 'Start', action: () => newRace() },
+      { label: 'Terug', action: title },
+    ],
+  );
+}
+
+/** A fresh race on a random planet. Race mode never saves, so the solo game stays as it was. */
+function newRace(seed = Math.floor(Math.random() * 1e9)): void {
+  state = startRace(seed);
+  const planet = state.world.planet;
+  music.setMood(planet.theme.id);
+  showOverlay(
+    `Race · ${planet.name}`,
+    `${planet.theme.hazardName}: ${planet.theme.hazardDescription}`,
+    `Speler 1 landt links, speler 2 rechts. ${RACE_KEYS}`,
+    [{ label: 'Landen', action: start }],
+  );
+}
+
+/** The race has ended: who won and why. */
+function onRaceOver(): void {
+  const result = state.race?.result;
+  if (!result) return;
+  const name = (id: number) => `Speler ${id + 1}`;
+  let heading: string;
+  let text: string;
+  if (result.winner === null) {
+    heading = 'Gelijkspel';
+    text = result.reason === 'death' ? 'Jullie pakken liepen tegelijk leeg.' : 'De tijd is om en jullie staan gelijk.';
+  } else {
+    const winner = name(result.winner);
+    heading = `${winner} wint`;
+    const loser = state.players.find((p) => p.id !== result.winner);
+    if (result.reason === 'launch') text = `${winner} is als eerste opgestegen.`;
+    else if (result.reason === 'death') text = `Het pak van ${loser ? name(loser.id).toLowerCase() : 'de ander'} is leeg.`;
+    else text = `De tijd is om. ${winner} heeft de meeste onderdelen ingebouwd, of bij gelijkstand de meeste energie.`;
+  }
+  if (result.reason === 'launch') sound.play('launch');
+  showOverlay(heading, '', text, [
+    { label: 'Nieuwe race', action: () => newRace() },
+    { label: 'Menu', action: title },
+  ]);
 }
 
 function onDeath(): void {
@@ -311,7 +373,11 @@ function handleAppEvents(): void {
   let openMap = false;
   for (const e of state.events) {
     if (e.type === 'progress') progressed = true;
-    if (e.type === 'starmap') openMap = true;
+    if (e.type === 'starmap') {
+      openMap = true;
+      // In a local race the menu belongs to whoever opened it, so the screen switches to them.
+      if (e.player !== undefined) state.viewer = e.player;
+    }
   }
   if (progressed) save();
   if (openMap) {
@@ -334,6 +400,13 @@ window.addEventListener('keydown', (e) => {
     pauseMenu();
     return;
   }
+  if (e.code === 'Tab' && running && state.mode === 'race') {
+    e.preventDefault();
+    if (e.repeat) return;
+    state.viewer = (state.viewer + 1) % state.players.length;
+    hud.showToast(`Beeld: speler ${state.viewer + 1}`);
+    return;
+  }
   if (e.code === 'KeyH' && !e.repeat) {
     hud.setKeysVisible(!hud.keysVisible);
     return;
@@ -348,7 +421,8 @@ window.addEventListener('keydown', (e) => {
     hud.showToast(sound.muted ? 'Geluid uit' : 'Geluid aan');
     return;
   }
-  if (!overlay.hidden && primaryAction && (e.code === 'Enter' || e.code === 'Space')) {
+  // Ignore held keys: player 2 acts with Enter, and a held Enter must not click through the race result.
+  if (!overlay.hidden && primaryAction && !e.repeat && (e.code === 'Enter' || e.code === 'Space')) {
     // Let a focused button handle its own activation.
     if (document.activeElement instanceof HTMLButtonElement) return;
     e.preventDefault();
@@ -381,14 +455,8 @@ if (debug) {
   });
   // Walk around a mirrored race planet. The second player stands still at the other ship until race rules exist.
   byId('dbg-race').addEventListener('click', () => {
-    const seed = Math.floor(Math.random() * 1e9);
-    state = startRace(seed);
-    hud.showToast(`Debug: raceplaneet ${state.world.planet.theme.colourName}, seed ${seed}`);
-    music.setMood(state.world.planet.theme.id);
-    setTitleMode(false);
-    hideOverlay();
-    running = true;
-    canvas.focus();
+    newRace();
+    start();
   });
   byId('dbg-tips').addEventListener('click', () => {
     tips.reset();
@@ -408,15 +476,18 @@ function frame(now: number): void {
   // Turning a phone upright pauses the game; the page asks to turn it back.
   if (running && inputMode.touch && portrait.matches) pauseMenu();
   touch.setActive(running && inputMode.touch);
-  const input = mergeInput(keyboard.poll(), touch.poll());
+  gameEl.classList.toggle('race', state.mode === 'race' && !titleMode);
+  // A local race reads two players from one keyboard; touch controls are for solo play for now.
+  const input = state.mode === 'race' ? keyboard.pollSplit() : mergeInput(keyboard.poll(), touch.poll());
   if (running) {
     step(state, input, dt);
     handleAppEvents();
     if (state.status === 'dead') onDeath();
     else if (state.status === 'stranded') onStranded();
+    else if (state.status === 'over') onRaceOver();
   }
   tips.update(state, dt, running);
-  sound.handle(state.events);
+  sound.handle(state.events, state.viewer);
   sound.update(state, dt, running);
   const out = sound.output();
   if (out) music.attach(out.ctx, out.master);

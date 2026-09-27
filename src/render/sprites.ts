@@ -225,6 +225,8 @@ function drawCrawler(ctx: Ctx, c: Creeper, x: number, y: number, t: number, them
   }
 }
 
+const SUIT_STRIPES = ['#ff8a3d', '#8cff4a'];
+
 export function drawPlayer(ctx: Ctx, p: Player, x: number, y: number, t: number, lamp: boolean): void {
   rect(ctx, x - 5, y - 1, 10, 2, SHADOW);
   if (p.invulnerable > 0 && Math.floor(p.invulnerable * 14) % 2) return;
@@ -240,7 +242,8 @@ export function drawPlayer(ctx: Ctx, p: Player, x: number, y: number, t: number,
   rect(ctx, packX, y - 11, 2, 6, '#8f99a3');
   rect(ctx, packX, y - 11, 2, 1, '#c0c8d0');
   rect(ctx, x - 4, y - 11, 8, 7, '#e8edf2');
-  rect(ctx, x - 4, y - 8, 8, 1, '#ff8a3d');
+  // The suit stripe tells players apart in a race: orange for player 1, lime for player 2.
+  rect(ctx, x - 4, y - 8, 8, 1, SUIT_STRIPES[p.id % SUIT_STRIPES.length]);
   rect(ctx, x - 4, y - 5, 8, 1, '#b0b8c0');
   rect(ctx, f > 0 ? x + 4 : x - 5, y - 10 + liftA, 1, 4, '#d0d6dc');
   rect(ctx, x - 3, y - 16, 6, 5, '#f2f5f8');
