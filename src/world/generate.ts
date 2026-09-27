@@ -87,24 +87,25 @@ export function generateWorld(planet: PlanetDef): World {
     });
   }
 
-  const guarded = bunkers.filter(
-    (b) => b.kind === 'parts' || b.id - planet.partsNeeded < CONFIG.layout.guardedSupplyBunkers,
-  );
-  const creepers: Creeper[] = guarded.map((b) => {
+  const guardedSupply = planet.guardedSupplyBunkers ?? CONFIG.layout.guardedSupplyBunkers;
+  const guarded = bunkers.filter((b) => b.kind === 'parts' || b.id - planet.partsNeeded < guardedSupply);
+  const creepers: Creeper[] = guarded.map((b, i) => {
     const rx = rng.range(40, 54);
     const ry = rng.range(28, 36);
     const angle = rng.next() * Math.PI * 2;
     const cx = b.x;
     const cy = b.y - 4;
-    const kind = planet.creepers ?? 'crawler';
+    const kinds = planet.creepers ?? 'crawler';
+    const kind = typeof kinds === 'string' ? kinds : kinds[i % kinds.length];
     const x = cx + Math.cos(angle) * rx;
     const y = cy + Math.sin(angle) * ry;
     return {
       kind,
-      // Jumpers take no extra random numbers, so older planets generate exactly as before.
+      // Jumpers and gliders take no extra random numbers, so older planets generate exactly as before.
       jump: kind === 'jumper'
         ? { phase: 'rest', timer: 0.5 + (b.id % 4) * 0.3, duration: 0, fromX: x, fromY: y, toX: x, toY: y, z: 0 }
         : null,
+      slide: kind === 'glider' ? { phase: 'glide', timer: 0, dirX: 1, dirY: 0, speed: 0 } : null,
       cx, cy, rx, ry, angle,
       direction: rng.chance(0.5) ? 1 : -1,
       angularSpeed: CONFIG.enemies.patrolSpeed / ((rx + ry) / 2),

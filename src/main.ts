@@ -157,6 +157,30 @@ function confirmNewGame(): void {
   ]);
 }
 
+/** True while the opening "press a key" screen is up. It exists so the title music can start. */
+let splash = false;
+
+/**
+ * The opening screen. Browsers only allow sound after the player did something, so the title
+ * asks for one click or key first; the title menu then appears with its music already playing.
+ */
+function openingScreen(): void {
+  const saved = readSave();
+  showOverlay('Oxy8', '', 'Klik of druk op een toets om te beginnen.', []);
+  titleTheme = saved ? PLANETS[saved.live.planetIndex].theme : PLANETS[0].theme;
+  setTitleMode(true);
+  gameEl.classList.add('splash');
+  splash = true;
+}
+
+function leaveSplash(): void {
+  if (!splash) return;
+  splash = false;
+  gameEl.classList.remove('splash');
+  sound.unlock();
+  title();
+}
+
 /** Title screen: continue a saved game, start a new one, switch tips on or off. */
 function title(): void {
   const saved = readSave();
@@ -244,7 +268,16 @@ function handleAppEvents(): void {
   }
 }
 
+// A click (not pointerdown) leaves the opening screen, so the same click cannot land on a title button.
+window.addEventListener('click', leaveSplash);
+
 window.addEventListener('keydown', (e) => {
+  if (splash) {
+    if (e.repeat) return;
+    e.preventDefault();
+    leaveSplash();
+    return;
+  }
   if (e.code === 'KeyH' && !e.repeat) {
     hud.setKeysVisible(!hud.keysVisible);
     return;
@@ -295,7 +328,7 @@ if (debug) {
   });
 }
 
-title();
+openingScreen();
 
 let last = performance.now();
 let t = 0;

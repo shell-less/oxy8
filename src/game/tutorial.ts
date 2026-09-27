@@ -47,6 +47,11 @@ export const TIPS: readonly Tip[] = [
     when: (s) => s.world.creepers.some((c) => c.kind === 'jumper' && near(s, c.x, c.y, CONFIG.tips.nearCreeper)),
   },
   {
+    id: 'glider',
+    text: 'Deze kruipers glijden over het ijs. Zet er een zich schrap, stap dan opzij: hij glijdt in een rechte lijn.',
+    when: (s) => s.world.creepers.some((c) => c.kind === 'glider' && near(s, c.x, c.y, CONFIG.tips.nearCreeper)),
+  },
+  {
     id: 'energy-cell',
     text: 'Een geel lampje bij een blauwe bunker is een energiecel. Die kun je maar een keer pakken.',
     when: (s) => s.interaction.target?.kind === 'bunker' && s.interaction.target.bunker.energyCell,

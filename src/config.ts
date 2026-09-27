@@ -84,6 +84,21 @@ export const CONFIG = {
       /** Landing this close to the player hurts. */
       hitRadius: 10,
     },
+    glider: {
+      /** Warning before a charge: the glider braces and a red line shows where it will slide. */
+      braceSeconds: 0.7,
+      /** Speed at the start of a charge; faster than the player, but only in a straight line. */
+      slideSpeed: 120,
+      /** Slow-down while sliding, in pixels per second squared. */
+      slideFriction: 70,
+      /** The slide ends below this speed (about 100 pixels after the start). */
+      stopSpeed: 20,
+      /** Dazed after a slide, in seconds. */
+      recoverSeconds: 1.2,
+      /** Length of the warning line, in pixels. */
+      warningLength: 56,
+      hitRadius: 10,
+    },
   },
 
   layout: {
