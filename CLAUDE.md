@@ -36,6 +36,9 @@ src/
   systems/           movement, interaction, creepers, hazards, survival, items (scrap pickup, bottle, beacons),
                      bombs (race only: placing, arming, triggering, defusing).
                      Pure functions on GameState.
+  net/               network races, shared by browser and server: protocol (messages), view (what one
+                     player may see), apply (snapshots onto the browser's mirror state), match (one room,
+                     host-independent), codes (room codes). No sockets or Cloudflare code here.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
                      ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench), tips and touch (on-screen controls, DOM).
 tests/               Vitest tests for world generation and systems.
@@ -45,6 +48,7 @@ tests/               Vitest tests for world generation and systems.
 
 - **Determinism.** Gameplay randomness comes from `createRng` with a seed derived from the planet (`deriveSeed(seed, salt)`). Never use `Math.random()` in `world/`, `game/` or `systems/`. Visual-only randomness in `render/` may use `Math.random()`.
 - **Players.** Everything that belongs to one astronaut (position, oxygen, energy, parts, inventory, lamp, interaction, minimap) lives on `Player` in `state.players`. Systems take the player they act on; `step()` takes one `InputState` or one per player. Solo play has one player; race mode will have two. Rendering, the HUD, tips and saving use `localPlayer(state)`.
+- **Hidden information stays on the server.** In a network race the browser only gets what `net/view.ts` lets through. Anything a player may not see (empty bunkers, the other player's bombs, the other player off screen) must not appear in a snapshot; `tests/net.test.ts` checks this.
 - **Events, not side effects.** Systems call `emit(state, …)` for toasts, particles, shake. The renderer drains `state.events` each frame.
 - **Config over constants.** New tunable numbers go in `config.ts` with a comment and a unit.
 - **Sprites in code.** Sprites are small rectangle drawings in `render/sprites.ts`, anchored at the foot point. Keep to whole pixels.

@@ -180,6 +180,16 @@ export const CONFIG = {
       extraDrainPerSecond: 4,
     },
   },
+  /** Network races. The server runs step() at tickRate and sends a snapshot every snapshotEvery ticks. */
+  net: {
+    tickRate: 20,
+    snapshotEvery: 2,
+    /** Clients send input only when it changes, and at most this often per second. */
+    maxInputsPerSecond: 10,
+    /** Seconds a player who dropped out has to come back before the other player wins. */
+    reconnectSeconds: 20,
+  },
+
   /** Race mode: two players, one planet, first to launch wins. See docs/design.md. */
   race: {
     /** Race planets are larger than solo planets (90 x 60). */
