@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
 import { anyCraftable } from './crafting';
-import { isRepaired, type GameState } from './state';
+import { isRepaired, localPlayer, type GameState } from './state';
 
 /** Context the game state does not track itself. */
 export interface TipContext {
@@ -18,8 +18,11 @@ export interface Tip {
   when: (state: GameState, ctx: TipContext) => boolean;
 }
 
+/** Tips are about the local player: the one reading them. */
+const me = localPlayer;
+
 const near = (state: GameState, x: number, y: number, range: number) =>
-  Math.hypot(state.player.x - x, state.player.y - y) < range;
+  Math.hypot(me(state).x - x, me(state).y - y) < range;
 
 const darkness = (state: GameState) => darknessAt(hourOf(state.time));
 
@@ -58,13 +61,16 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'energy-cell',
     text: 'Een geel lampje bij een blauwe bunker is een energiecel. Die kun je maar een keer pakken.',
-    when: (s) => s.interaction.target?.kind === 'bunker' && s.interaction.target.bunker.energyCell,
+    when: (s) => {
+      const target = me(s).interaction.target;
+      return target?.kind === 'bunker' && target.bunker.energyCell;
+    },
   },
   {
     id: 'part',
     text: 'Breng het onderdeel naar je schip en houd daar E vast. Inbouwen kost 20 energie.',
     touchText: 'Breng het onderdeel naar je schip en houd daar de actieknop vast. Inbouwen kost 20 energie.',
-    when: (s) => s.partsCarried > s.partsInstalled,
+    when: (s) => me(s).partsCarried > me(s).partsInstalled,
   },
   {
     id: 'scrap',
@@ -75,24 +81,24 @@ export const TIPS: readonly Tip[] = [
     id: 'craft',
     text: 'Je hebt genoeg schroot om iets te maken. Houd E vast bij je schip en kies op de werkbank.',
     touchText: 'Je hebt genoeg schroot om iets te maken. Houd de actieknop vast bij je schip en kies op de werkbank.',
-    when: (s) => anyCraftable(s),
+    when: (s) => anyCraftable(me(s)),
   },
   {
     id: 'bottle',
     text: 'Weinig zuurstof? Druk op Q om je zuurstoffles te gebruiken.',
     touchText: 'Weinig zuurstof? Tik op de fles-knop om je zuurstoffles te gebruiken.',
-    when: (s) => s.inventory.bottles > 0 && s.oxygen < CONFIG.tips.lowOxygen,
+    when: (s) => me(s).inventory.bottles > 0 && me(s).oxygen < CONFIG.tips.lowOxygen,
   },
   {
     id: 'beacon',
     text: 'Druk op R om een lokbaken neer te zetten. Kruipers in de buurt gaan er even op af in plaats van op jou.',
     touchText: 'Tik op de baken-knop om een lokbaken neer te zetten. Kruipers in de buurt gaan er even op af in plaats van op jou.',
-    when: (s) => s.inventory.beacons > 0 && s.world.creepers.some((c) => near(s, c.x, c.y, CONFIG.tips.nearCreeper * 1.5)),
+    when: (s) => me(s).inventory.beacons > 0 && s.world.creepers.some((c) => near(s, c.x, c.y, CONFIG.tips.nearCreeper * 1.5)),
   },
   {
     id: 'oxygen',
     text: 'Je zuurstof is onder de helft. Blauwe bunkers vullen je tank altijd bij.',
-    when: (s) => s.oxygen < CONFIG.tips.lowOxygen,
+    when: (s) => me(s).oxygen < CONFIG.tips.lowOxygen,
   },
   {
     id: 'lamp',
@@ -103,7 +109,7 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'lamp-off',
     text: 'Zonder lamp zien kruipers je pas later, maar jij ziet ook minder.',
-    when: (s) => !s.lamp && darkness(s) > 0.3,
+    when: (s) => !me(s).lamp && darkness(s) > 0.3,
   },
   {
     id: 'starmap',

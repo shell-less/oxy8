@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { checkCraft, RECIPES, type Recipe, type RecipeId } from '../game/crafting';
-import type { GameState } from '../game/state';
+import { localPlayer, type GameState } from '../game/state';
 import { destinations, HOME_INDEX, type Destination } from '../game/travel';
 import { PLANETS } from '../world/planets';
 
@@ -44,11 +44,12 @@ export class StarMap {
   }
 
   open(state: GameState): void {
+    const me = localPlayer(state);
     const focusedRecipe = (document.activeElement as HTMLElement | null)?.dataset.recipe;
-    this.benchSub.textContent = `Schroot: ${state.inventory.scrap}`;
+    this.benchSub.textContent = `Schroot: ${me.inventory.scrap}`;
     this.bench.replaceChildren(...RECIPES.map((r) => this.renderRecipe(state, r)));
     this.rows = destinations(state);
-    this.sub.textContent = `Energie: ${Math.round(state.energy)} · een vlucht kost ${CONFIG.energy.flightCost}`;
+    this.sub.textContent = `Energie: ${Math.round(me.energy)} · een vlucht kost ${CONFIG.energy.flightCost}`;
     const touch = document.documentElement.classList.contains('touch');
     this.foot.textContent = touch ? 'Tik op een planeet om te vliegen' : 'Klik of kies met 1-9 · Esc: terug naar de planeet';
     this.list.replaceChildren(...this.rows.map((row, i) => this.renderRow(row, i + 1)));
@@ -60,7 +61,7 @@ export class StarMap {
   }
 
   private renderRecipe(state: GameState, recipe: Recipe): HTMLButtonElement {
-    const check = checkCraft(state, recipe.id);
+    const check = checkCraft(localPlayer(state), recipe.id);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn dest';

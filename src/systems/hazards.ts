@@ -8,10 +8,9 @@ export interface HazardModifiers {
   speedMultiplier: number;
   aggroMultiplier: number;
   oxygenMultiplier: number;
-  extraOxygenPerSecond: number;
 }
 
-const NONE: HazardModifiers = { speedMultiplier: 1, aggroMultiplier: 1, oxygenMultiplier: 1, extraOxygenPerSecond: 0 };
+const NONE: HazardModifiers = { speedMultiplier: 1, aggroMultiplier: 1, oxygenMultiplier: 1 };
 
 /** 0..1 storm strength, with a 1.5 second fade in and out. */
 export function stormIntensity(stormLeft: number): number {
@@ -68,10 +67,11 @@ function updateCold(state: GameState, darkness: number): HazardModifiers {
 function updateMeteors(state: GameState, dt: number): HazardModifiers {
   const h = state.hazards;
   const cfg = CONFIG.hazards.meteor;
-  const p = state.player;
   h.meteorTimer -= dt;
   if (h.meteorTimer <= 0) {
     h.meteorTimer = state.rng.range(cfg.intervalMin, cfg.intervalMax);
+    // Aim at the players in turn, so a second player does not double the pressure on either.
+    const p = state.players[h.meteorCount++ % state.players.length];
     const a = state.rng.next() * Math.PI * 2;
     const r = state.rng.next() * cfg.targetRadius;
     h.meteors.push({ x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r, timeLeft: cfg.warningSeconds });
@@ -82,18 +82,20 @@ function updateMeteors(state: GameState, dt: number): HazardModifiers {
     emit(state, { type: 'crater', x: m.x, y: m.y });
     emit(state, { type: 'burst', x: m.x, y: m.y, color: '#ffb347', count: 22 });
     emit(state, { type: 'burst', x: m.x, y: m.y, color: '#ff5a2a', count: 10 });
-    const d = Math.hypot(p.x - m.x, p.y - m.y);
-    if (d < 80) emit(state, { type: 'shake', amount: 0.12 + 0.2 * (1 - d / 80) });
-    if (d < cfg.hitRadius && p.invulnerable <= 0) {
-      damagePlayer(state, cfg.damage, 'Meteorietinslag');
+    for (const p of state.players) {
+      const d = Math.hypot(p.x - m.x, p.y - m.y);
+      if (d < 80) emit(state, { type: 'shake', amount: 0.12 + 0.2 * (1 - d / 80) });
+      if (d < cfg.hitRadius && p.invulnerable <= 0) {
+        damagePlayer(state, p, cfg.damage, 'Meteorietinslag');
+      }
     }
   }
   h.meteors = h.meteors.filter((m) => m.timeLeft > 0);
   return NONE;
 }
 
+/** Marks who stands in a pool; the extra drain is per player, so it is applied in the oxygen step. */
 function updateToxic(state: GameState): HazardModifiers {
-  const inPool = isInPool(state.world.pools, state.player.x, state.player.y);
-  state.hazards.inPool = inPool;
-  return { ...NONE, extraOxygenPerSecond: inPool ? CONFIG.hazards.toxic.extraDrainPerSecond : 0 };
+  for (const p of state.players) p.inPool = isInPool(state.world.pools, p.x, p.y);
+  return NONE;
 }

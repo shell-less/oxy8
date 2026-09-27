@@ -1,6 +1,6 @@
 import { PLANETS } from '../world/planets';
 import { snapshotCampaign, type Campaign, type PlanetProgress } from './campaign';
-import { emptyInventory, landOn, type GameState, type Inventory } from './state';
+import { emptyInventory, landOn, localPlayer, type GameState, type Inventory } from './state';
 
 /** Everything needed to rebuild a game. The worlds themselves come back from their fixed seeds. */
 export interface SaveData {
@@ -34,8 +34,8 @@ export function toSaveData(state: GameState): SaveData {
   return {
     version: 2,
     planetIndex: state.planetIndex,
-    energy: state.energy,
-    inventory: { ...state.inventory },
+    energy: localPlayer(state).energy,
+    inventory: { ...localPlayer(state).inventory },
     campaign: snapshotCampaign(state),
   };
 }

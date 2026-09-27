@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { NO_INPUT, stickVector, type InputState } from '../core/input';
-import type { GameState } from '../game/state';
+import { localPlayer, type GameState } from '../game/state';
 import { describe, type Action } from '../systems/interaction';
 
 const ACTION_LABELS: Record<Action, string> = {
@@ -115,17 +115,18 @@ export class TouchControls {
 
   /** Update labels, counts and the progress ring from the game state. */
   update(state: GameState): void {
+    const me = localPlayer(state);
     if (!this.active) return;
-    const info = state.status === 'playing' ? describe(state, state.interaction.target) : null;
+    const info = state.status === 'playing' ? describe(state, me, me.interaction.target) : null;
     const act = info?.available ? info.action : 'none';
     this.set('action', act, () => {
       this.actionLabel.textContent = ACTION_LABELS[act];
       this.action.classList.toggle('available', act !== 'none');
     });
-    this.action.style.setProperty('--progress', String(state.interaction.progress));
+    this.action.style.setProperty('--progress', String(me.interaction.progress));
 
-    this.set('lamp', String(state.lamp), () => this.lamp.classList.toggle('on', state.lamp));
-    const inv = state.inventory;
+    this.set('lamp', String(me.lamp), () => this.lamp.classList.toggle('on', me.lamp));
+    const inv = me.inventory;
     this.set('bottle', String(inv.bottles), () => {
       this.bottle.hidden = inv.bottles === 0;
       this.bottle.dataset.count = String(inv.bottles);

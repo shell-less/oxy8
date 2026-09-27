@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import type { InputState } from '../core/input';
 import { unlockIfRepaired } from '../game/campaign';
-import { emit, isRepaired, type GameState, type Target } from '../game/state';
+import { emit, isRepaired, type GameState, type Player, type Target } from '../game/state';
 import { PLANETS } from '../world/planets';
 
 export type Action = 'install' | 'starmap' | 'open' | 'none';
@@ -17,8 +17,7 @@ export interface ActionInfo {
 }
 
 /** The nearest bunker in range, otherwise the ship if in range. */
-export function findTarget(state: GameState): Target | null {
-  const p = state.player;
+export function findTarget(state: GameState, p: Player): Target | null {
   const { bunkerRange, shipRange } = CONFIG.interaction;
   let best: Target | null = null;
   let bestDist = Infinity;
@@ -34,7 +33,7 @@ export function findTarget(state: GameState): Target | null {
   return best;
 }
 
-export function describe(state: GameState, target: Target | null): ActionInfo | null {
+export function describe(state: GameState, p: Player, target: Target | null): ActionInfo | null {
   if (!target) return null;
   const ia = CONFIG.interaction;
   const needed = state.world.planet.partsNeeded;
@@ -44,12 +43,12 @@ export function describe(state: GameState, target: Target | null): ActionInfo | 
 
   if (target.kind === 'ship') {
     const cost = CONFIG.energy.installCost;
-    const waiting = state.partsCarried > state.partsInstalled;
-    if (waiting && state.energy >= cost) return info(`[E] Onderdeel inbouwen (-${cost} energie)`, 'install', ia.installSeconds);
+    const waiting = p.partsCarried > p.partsInstalled;
+    if (waiting && p.energy >= cost) return info(`[E] Onderdeel inbouwen (-${cost} energie)`, 'install', ia.installSeconds);
     let status: string;
     if (waiting) status = `Te weinig energie om in te bouwen (${cost} nodig)`;
-    else if (isRepaired(state)) status = PLANETS[state.planetIndex + 1] ? 'Motor klaar voor de volgende planeet' : 'Motor klaar voor de reis naar huis';
-    else status = `Motor mist nog ${needed - state.partsInstalled} onderdelen`;
+    else if (isRepaired(state, p)) status = PLANETS[state.planetIndex + 1] ? 'Motor klaar voor de volgende planeet' : 'Motor klaar voor de reis naar huis';
+    else status = `Motor mist nog ${needed - p.partsInstalled} onderdelen`;
     return info(`${status} · [E] Schip: werkbank en sterrenkaart`, 'starmap', ia.starMapSeconds);
   }
 
@@ -57,8 +56,8 @@ export function describe(state: GameState, target: Target | null): ActionInfo | 
   if (b.kind === 'parts') {
     return b.looted ? info('Bunker is leeg') : info('[E] Onderdelenbunker openen', 'open', ia.openPartsSeconds);
   }
-  const cellFits = b.energyCell && canTakeCell(state);
-  if (state.oxygen > 97 && !cellFits) {
+  const cellFits = b.energyCell && canTakeCell(p);
+  if (p.oxygen > 97 && !cellFits) {
     return info(b.energyCell ? 'Zuurstof vol, energie te vol voor de energiecel' : 'Zuurstoftank is vol');
   }
   return info('[E] Voorraadbunker openen', 'open', ia.openSupplySeconds);
@@ -68,10 +67,10 @@ export function describe(state: GameState, target: Target | null): ActionInfo | 
  * Hold E to perform the action. Returns true while the player is busy, so movement pauses.
  * Being hit resets progress, because damage knocks the player out of range.
  */
-export function updateInteraction(state: GameState, input: InputState, dt: number): boolean {
-  const ia = state.interaction;
-  const target = findTarget(state);
-  const info = describe(state, target);
+export function updateInteraction(state: GameState, p: Player, input: InputState, dt: number): boolean {
+  const ia = p.interaction;
+  const target = findTarget(state, p);
+  const info = describe(state, p, target);
   const sameTarget = sameTargetAs(ia.target, target);
   ia.target = target;
   if (!sameTarget) ia.progress = 0;
@@ -89,7 +88,7 @@ export function updateInteraction(state: GameState, input: InputState, dt: numbe
   if (ia.progress >= 1) {
     ia.progress = 0;
     ia.latched = true;
-    perform(state, target, info.action);
+    perform(state, p, target, info.action);
   }
   return true;
 }
@@ -101,11 +100,11 @@ function sameTargetAs(a: Target | null, b: Target | null): boolean {
 }
 
 /** Cells are only taken when all their energy fits, so none is wasted and the planet's budget holds. */
-function canTakeCell(state: GameState): boolean {
-  return state.energy + CONFIG.energy.cellAmount <= CONFIG.energy.max;
+function canTakeCell(p: Player): boolean {
+  return p.energy + CONFIG.energy.cellAmount <= CONFIG.energy.max;
 }
 
-function perform(state: GameState, target: Target, action: Action): void {
+function perform(state: GameState, p: Player, target: Target, action: Action): void {
   const needed = state.world.planet.partsNeeded;
   if (target.kind === 'ship') {
     if (action === 'starmap') {
@@ -113,16 +112,16 @@ function perform(state: GameState, target: Target, action: Action): void {
       return;
     }
     const ship = state.world.ship;
-    state.partsInstalled++;
-    state.energy -= CONFIG.energy.installCost;
-    emit(state, { type: 'burst', x: ship.x - 13 + (state.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });
-    const unlocked = unlockIfRepaired(state);
+    p.partsInstalled++;
+    p.energy -= CONFIG.energy.installCost;
+    emit(state, { type: 'burst', x: ship.x - 13 + (p.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });
+    const unlocked = unlockIfRepaired(state, p);
     emit(state, { type: 'sound', name: unlocked ? 'repaired' : 'install' });
     emit(state, {
       type: 'toast',
       text: unlocked
         ? 'Motor gerepareerd. Open de sterrenkaart om verder te reizen'
-        : `Onderdeel ingebouwd (${state.partsInstalled}/${needed})`,
+        : `Onderdeel ingebouwd (${p.partsInstalled}/${needed})`,
     });
     emit(state, { type: 'progress' });
     return;
@@ -131,21 +130,21 @@ function perform(state: GameState, target: Target, action: Action): void {
   const b = target.bunker;
   if (b.kind === 'parts') {
     b.looted = true;
-    state.partsCarried++;
+    p.partsCarried++;
     emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#ffb347', count: 20 });
     emit(state, { type: 'sound', name: 'part' });
-    emit(state, { type: 'toast', text: `Scheepsonderdeel gevonden (${state.partsCarried}/${needed})` });
+    emit(state, { type: 'toast', text: `Scheepsonderdeel gevonden (${p.partsCarried}/${needed})` });
     emit(state, { type: 'progress' });
     return;
   }
 
-  state.oxygen = 100;
+  p.oxygen = 100;
   let text = 'Zuurstof bijgevuld';
-  if (b.energyCell && !canTakeCell(state)) {
+  if (b.energyCell && !canTakeCell(p)) {
     text += '. Energiecel blijft liggen: je energie is te vol';
   } else if (b.energyCell) {
     b.energyCell = false;
-    state.energy += CONFIG.energy.cellAmount;
+    p.energy += CONFIG.energy.cellAmount;
     text += `, energiecel +${CONFIG.energy.cellAmount}`;
   }
   emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#4fd8ff', count: 16 });

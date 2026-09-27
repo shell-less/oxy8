@@ -16,7 +16,7 @@ function takeOneCell(state: GameState): number {
 }
 
 function repair(state: GameState): void {
-  state.partsCarried = state.partsInstalled = state.world.planet.partsNeeded;
+  state.players[0].partsCarried = state.players[0].partsInstalled = state.world.planet.partsNeeded;
   state.campaign.unlocked = Math.max(state.campaign.unlocked, state.planetIndex + 1);
 }
 
@@ -70,10 +70,10 @@ describe('travel', () => {
   it('costs energy and refills oxygen', () => {
     const s = landOn(0, { energy: 60 });
     repair(s);
-    s.oxygen = 20;
+    s.players[0].oxygen = 20;
     const there = mustTravel(s, 1);
-    expect(there.energy).toBe(60 - CONFIG.energy.flightCost);
-    expect(there.oxygen).toBe(100);
+    expect(there.players[0].energy).toBe(60 - CONFIG.energy.flightCost);
+    expect(there.players[0].oxygen).toBe(100);
     expect(there.planetIndex).toBe(1);
   });
 
@@ -88,42 +88,42 @@ describe('travel', () => {
     const s = landOn(0, { energy: 100 });
     const looted = s.world.bunkers.find((b) => b.kind === 'parts')!;
     looted.looted = true;
-    s.partsCarried = 1;
+    s.players[0].partsCarried = 1;
     const cellId = takeOneCell(s);
     repair(s);
 
     const there = mustTravel(s, 1);
-    expect(there.partsInstalled).toBe(0);
+    expect(there.players[0].partsInstalled).toBe(0);
     const back = mustTravel(there, 0);
     expect(back.world.bunkers.find((b) => b.id === looted.id)!.looted).toBe(true);
     expect(back.world.bunkers.find((b) => b.id === cellId)!.energyCell).toBe(false);
-    expect(back.partsInstalled).toBe(PLANETS[0].partsNeeded);
-    expect(back.energy).toBe(100 - 2 * CONFIG.energy.flightCost);
+    expect(back.players[0].partsInstalled).toBe(PLANETS[0].partsNeeded);
+    expect(back.players[0].energy).toBe(100 - 2 * CONFIG.energy.flightCost);
   });
 
   it('keeps progress on a planet that was left half done', () => {
     const s = landOn(0, { energy: 100 });
     repair(s);
     const nereid = mustTravel(s, 1);
-    nereid.partsCarried = 2;
-    nereid.partsInstalled = 1;
+    nereid.players[0].partsCarried = 2;
+    nereid.players[0].partsInstalled = 1;
     nereid.world.bunkers.filter((b) => b.kind === 'parts').slice(0, 2).forEach((b) => (b.looted = true));
     const kepler = mustTravel(nereid, 0);
     const again = mustTravel(kepler, 1);
-    expect(again.partsCarried).toBe(2);
-    expect(again.partsInstalled).toBe(1);
+    expect(again.players[0].partsCarried).toBe(2);
+    expect(again.players[0].partsInstalled).toBe(1);
     expect(again.world.bunkers.filter((b) => b.looted)).toHaveLength(2);
   });
 
   it('remembers the explored minimap', () => {
     const s = landOn(0, { energy: 100 });
-    s.explored[5] = 1;
-    s.explored[4000] = 1;
+    s.players[0].explored[5] = 1;
+    s.players[0].explored[4000] = 1;
     repair(s);
     const back = mustTravel(mustTravel(s, 1), 0);
-    expect(back.explored[5]).toBe(1);
-    expect(back.explored[4000]).toBe(1);
-    expect(back.explored[6]).toBe(0);
+    expect(back.players[0].explored[5]).toBe(1);
+    expect(back.players[0].explored[4000]).toBe(1);
+    expect(back.players[0].explored[6]).toBe(0);
   });
 });
 
@@ -158,7 +158,7 @@ describe('saving', () => {
   it('round-trips a game through storage', () => {
     const s = landOn(0, { energy: 77 });
     s.world.bunkers.find((b) => b.kind === 'parts')!.looted = true;
-    s.partsCarried = 1;
+    s.players[0].partsCarried = 1;
     const store = memoryStore();
     const data = toSaveData(s);
     writeSave({ live: data, checkpoint: data }, store);
@@ -166,8 +166,8 @@ describe('saving', () => {
     const file = readSave(store)!;
     const loaded = fromSaveData(file.live);
     expect(loaded.planetIndex).toBe(0);
-    expect(loaded.energy).toBe(77);
-    expect(loaded.partsCarried).toBe(1);
+    expect(loaded.players[0].energy).toBe(77);
+    expect(loaded.players[0].partsCarried).toBe(1);
     expect(loaded.world.bunkers.filter((b) => b.looted)).toHaveLength(1);
   });
 

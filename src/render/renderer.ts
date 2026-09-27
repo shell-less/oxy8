@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
-import type { GameState } from '../game/state';
+import { localPlayer, type GameState } from '../game/state';
 import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
@@ -68,7 +68,7 @@ export class Renderer {
     }
     const hour = hourOf(state.time);
     const darkness = darknessAt(hour);
-    const p = state.player;
+    const p = localPlayer(state);
 
     let cx = p.x - VW / 2;
     let cy = p.y - VH / 2 - 8;
@@ -89,7 +89,7 @@ export class Renderer {
     for (const b of world.bunkers) if (onScreen(b.x, b.y)) drawList.push([b.y, () => drawBunker(ctx, b, b.x - cx, b.y - cy, t)]);
     const ship = world.ship;
     if (onScreen(ship.x, ship.y)) {
-      drawList.push([ship.y, () => drawShip(ctx, ship.x - cx, ship.y - cy, t, world.planet.partsNeeded, state.partsInstalled)]);
+      drawList.push([ship.y, () => drawShip(ctx, ship.x - cx, ship.y - cy, t, world.planet.partsNeeded, p.partsInstalled)]);
     }
     for (const c of world.crystals) if (onScreen(c.x, c.y)) drawList.push([c.y, () => drawCrystal(ctx, c, c.x - cx, c.y - cy, t, theme)]);
     for (const s of world.scrap) if (!s.taken && onScreen(s.x, s.y)) drawList.push([s.y, () => drawScrap(ctx, s, s.x - cx, s.y - cy, t)]);
@@ -97,7 +97,7 @@ export class Renderer {
     for (const c of world.creepers) {
       if (onScreen(c.x, c.y)) drawList.push([c.y, () => drawCreeper(ctx, c, Math.round(c.x - cx), Math.round(c.y - cy), t, theme)]);
     }
-    drawList.push([p.y, () => drawPlayer(ctx, p, Math.round(p.x - cx), Math.round(p.y - cy), t, state.lamp)]);
+    drawList.push([p.y, () => drawPlayer(ctx, p, Math.round(p.x - cx), Math.round(p.y - cy), t, p.lamp)]);
     drawList.sort((a, b) => a[0] - b[0]).forEach(([, draw]) => draw());
 
     this.particles.draw(ctx, cx, cy);
@@ -113,7 +113,8 @@ export class Renderer {
   }
 
   private drawProgress(state: GameState): void {
-    const ia = state.interaction;
+    const me = localPlayer(state);
+    const ia = me.interaction;
     if (ia.progress <= 0 || !ia.target) return;
     const anchor = ia.target.kind === 'ship' ? state.world.ship : ia.target.bunker;
     const x = anchor.x - this.camX;
@@ -127,7 +128,7 @@ export class Renderer {
     const { ctx, lightCtx: lx, camX: cx, camY: cy, t } = this;
     const world = state.world;
     const theme = world.planet.theme;
-    const p = state.player;
+    const p = localPlayer(state);
 
     lx.globalCompositeOperation = 'source-over';
     lx.clearRect(0, 0, VW, VH);
@@ -142,7 +143,7 @@ export class Renderer {
       lx.fillStyle = g;
       lx.fillRect(x - r, y - r, r * 2, r * 2);
     };
-    if (state.lamp) hole(p.x - cx + p.facing * 6, p.y - cy - 8, 58 + Math.sin(t * 9) * 1.5, 1);
+    if (p.lamp) hole(p.x - cx + p.facing * 6, p.y - cy - 8, 58 + Math.sin(t * 9) * 1.5, 1);
     else hole(p.x - cx, p.y - cy - 8, 20, 0.65);
     const litBunkers = world.bunkers.filter((b) => (b.kind === 'supply' || !b.looted) && onScreen(b.x, b.y));
     for (const b of litBunkers) hole(b.x - cx, b.y - cy - 12, 32, 0.8);
@@ -152,7 +153,7 @@ export class Renderer {
     ctx.drawImage(this.light, 0, 0);
 
     ctx.globalCompositeOperation = 'lighter';
-    if (state.lamp) radialGlow(ctx, p.x - cx + p.facing * 10, p.y - cy - 8, 40, '255,230,170', 0.12 * darkness);
+    if (p.lamp) radialGlow(ctx, p.x - cx + p.facing * 10, p.y - cy - 8, 40, '255,230,170', 0.12 * darkness);
     for (const b of litBunkers) {
       radialGlow(ctx, b.x - cx, b.y - cy - 12, 22, b.kind === 'parts' ? '255,140,60' : '60,210,255', 0.35 * darkness);
     }
@@ -202,6 +203,7 @@ export class Renderer {
   }
 
   private drawScreenEffects(state: GameState, hour: number, darkness: number): void {
+    const me = localPlayer(state);
     const { ctx, t } = this;
     const theme = state.world.planet.theme;
     const warm = Math.max(0, 1 - Math.abs(hour - 18.5) / 2.2, 1 - Math.abs(hour - 5.5) / 1.8);
@@ -220,7 +222,7 @@ export class Renderer {
       ctx.strokeRect(3, 3, VW - 6, VH - 6);
     }
     const playing = state.status === 'playing';
-    if (state.hazards.inPool && playing) {
+    if (me.inPool && playing) {
       ctx.fillStyle = `rgba(120,255,90,${0.1 + 0.05 * Math.sin(t * 6)})`;
       ctx.fillRect(0, 0, VW, VH);
     }
@@ -228,7 +230,7 @@ export class Renderer {
       ctx.fillStyle = `rgba(255,40,60,${this.flash * 0.3})`;
       ctx.fillRect(0, 0, VW, VH);
     }
-    if (state.oxygen < 25 && playing) {
+    if (me.oxygen < 25 && playing) {
       ctx.strokeStyle = `rgba(255,50,70,${((Math.sin(t * 6) + 1) / 2) * 0.6})`;
       ctx.lineWidth = 3;
       ctx.strokeRect(1.5, 1.5, VW - 3, VH - 3);
@@ -239,7 +241,7 @@ export class Renderer {
   private ambientParticles(state: GameState, dt: number): void {
     const P = this.particles;
     const theme = state.world.planet.theme;
-    const p = state.player;
+    const p = localPlayer(state);
     const { camX: cx, camY: cy } = this;
     if (Math.random() < 0.35) P.spawn(cx + Math.random() * VW - 20, cy + Math.random() * VH, 16 + Math.random() * 10, 2, 1.6, theme.dust);
     this.smokeTimer -= dt;
@@ -264,7 +266,7 @@ export class Renderer {
     if (p.leak > 0 && Math.random() < 0.6) {
       P.spawn(p.x - p.facing * 5, p.y - 9, -p.facing * (10 + Math.random() * 20), (Math.random() - 0.5) * 14 - 6, 0.6, '#dff6ff');
     }
-    if (state.hazards.inPool && Math.random() < 0.3) {
+    if (p.inPool && Math.random() < 0.3) {
       P.spawn(p.x + (Math.random() - 0.5) * 6, p.y - 10, (Math.random() - 0.5) * 8, -10, 0.7, '#9cff6a');
     }
     const storm = stormIntensity(state.hazards.storm);

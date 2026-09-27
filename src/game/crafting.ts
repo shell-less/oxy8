@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { emit, type GameState } from './state';
+import { emit, localPlayer, type GameState, type Player } from './state';
 
 export type RecipeId = 'bottle' | 'armour' | 'beacon';
 
@@ -39,9 +39,9 @@ export interface CraftCheck {
   note: string;
 }
 
-export function checkCraft(state: GameState, id: RecipeId): CraftCheck {
+export function checkCraft(player: Player, id: RecipeId): CraftCheck {
   const recipe = RECIPES.find((r) => r.id === id)!;
-  const inv = state.inventory;
+  const inv = player.inventory;
   const c = CONFIG.crafting;
   if (id === 'armour' && inv.armour) return { ok: false, note: 'Je pak is al versterkt' };
   if (id === 'bottle' && inv.bottles >= c.bottle.carryMax) return { ok: false, note: `Je draagt er al ${inv.bottles}` };
@@ -51,11 +51,11 @@ export function checkCraft(state: GameState, id: RecipeId): CraftCheck {
   return { ok: true, note: id === 'armour' ? 'Eenmalige upgrade' : `Je draagt er ${have}` };
 }
 
-export function craft(state: GameState, id: RecipeId): CraftCheck {
-  const check = checkCraft(state, id);
+export function craft(state: GameState, id: RecipeId, player: Player = localPlayer(state)): CraftCheck {
+  const check = checkCraft(player, id);
   if (!check.ok) return check;
   const recipe = RECIPES.find((r) => r.id === id)!;
-  const inv = state.inventory;
+  const inv = player.inventory;
   inv.scrap -= recipe.scrap;
   if (id === 'bottle') inv.bottles++;
   else if (id === 'beacon') inv.beacons++;
@@ -67,6 +67,6 @@ export function craft(state: GameState, id: RecipeId): CraftCheck {
 }
 
 /** The cheapest recipe the player can make right now, if any. Used by the tutorial. */
-export function anyCraftable(state: GameState): boolean {
-  return RECIPES.some((r) => checkCraft(state, r.id).ok);
+export function anyCraftable(player: Player): boolean {
+  return RECIPES.some((r) => checkCraft(player, r.id).ok);
 }

@@ -1,36 +1,34 @@
 import { CONFIG } from '../config';
 import type { InputState } from '../core/input';
-import { emit, type GameState } from '../game/state';
+import { emit, type GameState, type Player } from '../game/state';
 
 /** Walking over scrap picks it up. */
-export function pickUpScrap(state: GameState): void {
-  const p = state.player;
+export function pickUpScrap(state: GameState, p: Player): void {
   for (const s of state.world.scrap) {
     if (s.taken || Math.hypot(p.x - s.x, p.y - s.y) > CONFIG.crafting.pickupRange) continue;
     s.taken = true;
-    state.inventory.scrap++;
+    p.inventory.scrap++;
     emit(state, { type: 'burst', x: s.x, y: s.y - 2, color: '#d8e0e8', count: 8 });
     emit(state, { type: 'sound', name: 'pickup' });
-    emit(state, { type: 'toast', text: `Schroot opgepakt (${state.inventory.scrap})` });
+    emit(state, { type: 'toast', text: `Schroot opgepakt (${p.inventory.scrap})` });
     emit(state, { type: 'progress' });
   }
 }
 
-/** Q uses an oxygen bottle, R places a decoy beacon. Beacons run out after a while. */
-export function updateItems(state: GameState, input: InputState, dt: number): void {
-  const inv = state.inventory;
-  const p = state.player;
+/** Q uses an oxygen bottle, R places a decoy beacon. */
+export function updateItems(state: GameState, p: Player, input: InputState): void {
+  const inv = p.inventory;
   const c = CONFIG.crafting;
 
   if (input.useBottle) {
     if (inv.bottles <= 0) {
       emit(state, { type: 'toast', text: 'Je hebt geen zuurstoffles. Maak er een bij je schip' });
       emit(state, { type: 'sound', name: 'deny' });
-    } else if (state.oxygen >= 99) {
+    } else if (p.oxygen >= 99) {
       emit(state, { type: 'toast', text: 'Je zuurstoftank is vol' });
     } else {
       inv.bottles--;
-      state.oxygen = Math.min(100, state.oxygen + c.bottle.oxygen);
+      p.oxygen = Math.min(100, p.oxygen + c.bottle.oxygen);
       emit(state, { type: 'burst', x: p.x, y: p.y - 10, color: '#4fd8ff', count: 14 });
       emit(state, { type: 'sound', name: 'bottle' });
       emit(state, { type: 'toast', text: `Zuurstoffles gebruikt: +${c.bottle.oxygen}%` });
@@ -51,6 +49,10 @@ export function updateItems(state: GameState, input: InputState, dt: number): vo
     }
   }
 
+}
+
+/** Placed beacons run out after a while. */
+export function ageBeacons(state: GameState, dt: number): void {
   for (const b of state.beacons) b.timeLeft -= dt;
   state.beacons = state.beacons.filter((b) => b.timeLeft > 0);
 }

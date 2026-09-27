@@ -30,10 +30,10 @@ describe('analog walking', () => {
       const s = landOn(0);
       s.world.creepers.length = 0;
       s.world.solids.length = 0;
-      const x0 = s.player.x;
-      const y0 = s.player.y;
+      const x0 = s.players[0].x;
+      const y0 = s.players[0].y;
       for (let i = 0; i < 30; i++) step(s, { ...NO_INPUT, moveX, moveY }, 1 / 60);
-      return Math.hypot(s.player.x - x0, s.player.y - y0);
+      return Math.hypot(s.players[0].x - x0, s.players[0].y - y0);
     };
     const full = distance(1, 0);
     expect(distance(0.5, 0)).toBeCloseTo(full / 2, 1);

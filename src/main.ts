@@ -5,7 +5,7 @@ import { Keyboard, mergeInput } from './core/input';
 import { unlockIfRepaired } from './game/campaign';
 import { craft } from './game/crafting';
 import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
-import { landOn, type GameState } from './game/state';
+import { landOn, localPlayer, type GameState } from './game/state';
 import { travel, type Destination } from './game/travel';
 import { step } from './game/update';
 import { SoundBoard } from './render/audio';
@@ -104,9 +104,10 @@ function briefing(): void {
   const planet = state.world.planet;
   music.setMood(planet.theme.id);
   const firstVisit = state.campaign.planets[state.planetIndex] === null;
-  const sub = state.partsInstalled >= planet.partsNeeded
+  const installed = localPlayer(state).partsInstalled;
+  const sub = installed >= planet.partsNeeded
     ? 'De motor is hier al gerepareerd.'
-    : `Vind ${planet.partsNeeded - state.partsInstalled} scheepsonderdelen voor een sterkere motor.`;
+    : `Vind ${planet.partsNeeded - installed} scheepsonderdelen voor een sterkere motor.`;
   showOverlay(
     `Planeet ${state.planetIndex + 1} · ${planet.name}`,
     `${planet.theme.hazardName}: ${planet.theme.hazardDescription}`,
@@ -360,14 +361,16 @@ if (debug) {
     canvas.focus();
   });
   byId('dbg-repair').addEventListener('click', () => {
-    state.partsCarried = state.partsInstalled = state.world.planet.partsNeeded;
-    unlockIfRepaired(state);
+    const me = localPlayer(state);
+    me.partsCarried = me.partsInstalled = state.world.planet.partsNeeded;
+    unlockIfRepaired(state, me);
     save();
     hud.showToast('Debug: motor gerepareerd');
     canvas.focus();
   });
   byId('dbg-energy').addEventListener('click', () => {
-    state.energy = Math.min(100, state.energy + 50);
+    const me = localPlayer(state);
+    me.energy = Math.min(100, me.energy + 50);
     canvas.focus();
   });
   byId('dbg-tips').addEventListener('click', () => {

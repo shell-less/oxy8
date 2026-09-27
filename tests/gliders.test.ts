@@ -23,15 +23,15 @@ function setup(): { s: GameState; c: Creeper } {
   const s = landOn(NEREID);
   s.world.creepers.length = 1;
   const c = s.world.creepers[0];
-  s.player.x = c.cx + 400;
-  s.player.y = c.cy;
+  s.players[0].x = c.cx + 400;
+  s.players[0].y = c.cy;
   return { s, c };
 }
 
 /** Put the player on the glider's right, within sight. */
 function inSight(s: GameState, c: Creeper): void {
-  s.player.x = c.x + 40;
-  s.player.y = c.y;
+  s.players[0].x = c.x + 40;
+  s.players[0].y = c.y;
 }
 
 describe('gliders', () => {
@@ -62,7 +62,7 @@ describe('gliders', () => {
     const { s, c } = setup();
     inSight(s, c);
     run(s, CONFIG.enemies.glider.braceSeconds + 1);
-    expect(s.oxygen).toBeLessThan(100 - CONFIG.oxygen.enemyHitDamage + 1);
+    expect(s.players[0].oxygen).toBeLessThan(100 - CONFIG.oxygen.enemyHitDamage + 1);
     expect(c.mode).toBe('return');
   });
 
@@ -72,9 +72,9 @@ describe('gliders', () => {
     run(s, CONFIG.enemies.glider.braceSeconds + 2 * DT);
     expect(c.slide!.phase).toBe('slide');
     const startY = c.y;
-    s.player.y += 30;
+    s.players[0].y += 30;
     run(s, 2);
-    expect(s.oxygen).toBeGreaterThan(100 - CONFIG.oxygen.enemyHitDamage);
+    expect(s.players[0].oxygen).toBeGreaterThan(100 - CONFIG.oxygen.enemyHitDamage);
     expect(Math.abs(c.y - startY)).toBeLessThan(1);
   });
 
@@ -83,8 +83,8 @@ describe('gliders', () => {
     inSight(s, c);
     run(s, CONFIG.enemies.glider.braceSeconds + 2 * DT);
     const from = { x: c.x, y: c.y };
-    s.player.y += 60;
-    s.player.x += 300;
+    s.players[0].y += 60;
+    s.players[0].x += 300;
     run(s, 1.8);
     expect(c.slide!.phase).toBe('recover');
     const slid = Math.hypot(c.x - from.x, c.y - from.y);
@@ -123,8 +123,8 @@ describe('Viridia', () => {
   it('runs all three kinds side by side without trouble', () => {
     const s = landOn(VIRIDIA);
     const p = s.world.creepers[0];
-    s.player.x = p.cx;
-    s.player.y = p.cy;
+    s.players[0].x = p.cx;
+    s.players[0].y = p.cy;
     run(s, 20);
     for (const c of s.world.creepers) {
       expect(Number.isFinite(c.x) && Number.isFinite(c.y)).toBe(true);
