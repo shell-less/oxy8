@@ -133,7 +133,7 @@ Two players land at opposite ends of one planet, each next to their own ship. Th
 
 A deadlock is still possible (one player has the parts, the other the energy). Two things end it:
 
-- **Supply drop.** At the start of the second night a pod lands in the centre, marked on both minimaps. It holds one part and one energy cell.
+- **Supply drop.** At the start of the second night (day 2, 18:00, about 7 minutes into the race) a pod lands in the centre, marked on both minimaps. Ten seconds before, both players get a warning, and the pod is seen falling onto its shadow. It holds one part and one energy cell: whoever opens it first takes the part, and the cell too if all of it fits; otherwise the cell stays for the other player. Its lights show what is still inside.
 - **Time limit.** After about 12 minutes the player with the most installed parts wins; energy breaks a tie, then it is a draw.
 
 ### A fair, mirrored planet
@@ -199,7 +199,7 @@ Hidden information decides the architecture. If both browsers held the full stat
 2. ~~Mirrored race generation.~~ A debug button in `npm run dev` ("Raceplaneet") lands you on a random race planet; the second player stands still at the other ship.
 3. Race rules, testable with two players on one keyboard, so balancing can start before there is a server. Split in three:
    - ~~3a. Local race: two players on one keyboard, Tab to switch, launch to win, every death loses, time limit, result screen.~~
-   - 3b. Hidden empty bunkers and the supply drop.
+   - ~~3b. Hidden empty bunkers and the supply drop.~~
    - 3c. Bombs and defusing.
 4. Room server and room codes.
 5. Rematch, mobile testing, balance.

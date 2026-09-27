@@ -195,6 +195,12 @@ export const CONFIG = {
     /** Supply bunkers with a creeper patrol, besides every parts bunker: the mirrored pair with cells. */
     guardedSupplyBunkers: 2,
     startEnergy: 30,
+    /** The supply drop lands in the centre at the start of the second night (day 2, 18:00), with this much warning. */
+    dropDay: 2,
+    dropHour: 18,
+    dropWarnSeconds: 10,
+    /** Seconds the pod is seen falling before it lands. Visual only. */
+    dropFallSeconds: 1.2,
     /** After this many seconds the race ends: most installed parts wins, then most energy, else a draw. */
     timeLimit: 720,
     /** Ships stand this far left and right of the centre, and up to shipOffsetY above or below it. */

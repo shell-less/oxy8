@@ -88,6 +88,7 @@ export class SoundBoard {
       case 'pounce': this.tone(180, 0.25, 'triangle', 0.14, 0, 520); break;
       case 'land': this.tone(110, 0.12, 'sine', 0.25, 0, 50); this.noise(0.1, 0.1, 600); break;
       case 'slide': this.noise(0.9, 0.12, 6000, 900); this.tone(700, 0.4, 'triangle', 0.06, 0, 350); break;
+      case 'drop': this.noise(0.8, 0.25, 1800, 200); this.tone(90, 0.6, 'sine', 0.3, 0.5, 40); break;
       case 'storm-warning': this.noise(1.2, 0.08, 400, 1500); break;
       case 'impact': this.noise(0.6, 0.35, 500); this.tone(70, 0.5, 'sine', 0.3, 0, 30); break;
       case 'launch': this.noise(1.4, 0.2, 300, 3000); this.tone(80, 1.4, 'sawtooth', 0.1, 0, 400); break;

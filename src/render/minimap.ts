@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { localPlayer, shipOf, type GameState } from '../game/state';
+import { localPlayer, looksLooted, shipOf, type GameState } from '../game/state';
 
 /** One pixel per tile. Only explored tiles and the bunkers on them are shown. */
 export class Minimap {
@@ -42,12 +42,18 @@ export class Minimap {
     }
     for (const b of world.bunkers) {
       if (!explored(b.x, b.y)) continue;
-      ctx.fillStyle = b.kind === 'parts' ? (b.looted ? '#6a4a30' : '#ff9a3c') : '#43d6ff';
+      ctx.fillStyle = b.kind === 'parts' ? (looksLooted(state, me, b) ? '#6a4a30' : '#ff9a3c') : '#43d6ff';
       ctx.fillRect(Math.floor(b.x / T) - 1, Math.floor(b.y / T) - 1, 2, 2);
     }
     ctx.fillStyle = '#e6eaee';
     const ship = shipOf(state, me);
     ctx.fillRect(Math.floor(ship.x / T) - 1, Math.floor(ship.y / T) - 1, 3, 2);
+    // The landed supply pod shows on every minimap, explored or not.
+    const drop = state.race?.drop;
+    if (drop?.landed && (drop.part || drop.energyCell) && Math.sin(t * 5) > -0.3) {
+      ctx.fillStyle = '#ffe14a';
+      ctx.fillRect(Math.floor(drop.x / T) - 1, Math.floor(drop.y / T) - 1, 3, 3);
+    }
     if (Math.sin(t * 8) > -0.5) {
       ctx.fillStyle = '#7dff8a';
       ctx.fillRect(Math.floor(me.x / T), Math.floor(me.y / T), 1, 1);

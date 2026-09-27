@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import type { Player } from '../game/state';
 import type { Theme } from '../world/themes';
-import type { Beacon } from '../game/state';
+import type { Beacon, SupplyDrop } from '../game/state';
 import type { Bunker, Creeper, Crystal, Scrap } from '../world/types';
 import { rect, type Ctx } from './pixels';
 
@@ -27,6 +27,27 @@ export function drawBunker(ctx: Ctx, b: Bunker, x: number, y: number, t: number)
   rect(ctx, x + 10, y - 26, 1, 6, '#8b949c');
   rect(ctx, x + 10, y - 27, 1, 1, lit && Math.sin(t * 5 + b.phase) > 0 ? accent : '#444');
   if (!isParts && b.energyCell) rect(ctx, x - 11, y - 6, 3, 3, Math.sin(t * 4 + b.phase) > 0 ? '#ffd24a' : '#806a20');
+}
+
+/**
+ * The race supply pod. `fall` runs from 1 (high in the sky) to 0 (landed): the pod drops onto
+ * its growing shadow. A yellow light means the energy cell is inside, orange the part.
+ */
+export function drawDrop(ctx: Ctx, drop: SupplyDrop, x: number, y: number, t: number, fall: number): void {
+  const shadow = Math.round(4 + 6 * (1 - fall));
+  rect(ctx, x - shadow, y - 1, shadow * 2, 2, SHADOW);
+  const top = y - Math.round(fall * 140);
+  rect(ctx, x - 6, top - 14, 12, 13, '#9aa4ac');
+  rect(ctx, x - 5, top - 16, 10, 2, '#c7ccd2');
+  rect(ctx, x - 6, top - 9, 12, 2, '#ff8a3d');
+  rect(ctx, x - 7, top - 3, 3, 3, '#5f6870');
+  rect(ctx, x + 4, top - 3, 3, 3, '#5f6870');
+  if (fall > 0) {
+    rect(ctx, x - 2, top - 20, 4, 4, Math.sin(t * 30) > 0 ? '#ffb347' : '#ff5a2a');
+    return;
+  }
+  rect(ctx, x - 4, top - 13, 3, 3, drop.part && Math.sin(t * 4) > -0.2 ? '#ff9a3c' : '#3a3f44');
+  rect(ctx, x + 1, top - 13, 3, 3, drop.energyCell && Math.sin(t * 4 + 1) > 0 ? '#ffd24a' : '#3a3f44');
 }
 
 export function drawShip(ctx: Ctx, x: number, y: number, t: number, slots: number, installed: number): void {

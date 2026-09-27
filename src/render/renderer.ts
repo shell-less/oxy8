@@ -1,11 +1,11 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
-import { isFor, localPlayer, shipOf, type GameState } from '../game/state';
+import { isFor, localPlayer, looksLooted, shipOf, type GameState } from '../game/state';
 import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
 import { radialGlow, rect, type Ctx } from './pixels';
-import { drawBeacon, drawBunker, drawCreeper, drawCrystal, drawPlayer, drawPounceMarker, drawScrap, drawSlideMarker, drawShip } from './sprites';
+import { drawBeacon, drawBunker, drawCreeper, drawCrystal, drawDrop, drawPlayer, drawPounceMarker, drawScrap, drawSlideMarker, drawShip } from './sprites';
 
 const VW = CONFIG.view.width;
 const VH = CONFIG.view.height;
@@ -88,7 +88,19 @@ export class Renderer {
     // Everything with height is sorted by its foot y, so things further down overlap things behind them.
     const onScreen = (x: number, y: number) => x > cx - 40 && x < cx + VW + 40 && y > cy - 40 && y < cy + VH + 40;
     const drawList: [number, () => void][] = [];
-    for (const b of world.bunkers) if (onScreen(b.x, b.y)) drawList.push([b.y, () => drawBunker(ctx, b, b.x - cx, b.y - cy, t)]);
+    // A race bunker only looks empty to a player who knows it is.
+    for (const b of world.bunkers) {
+      if (!onScreen(b.x, b.y)) continue;
+      const shown = b.kind === 'parts' ? { ...b, looted: looksLooted(state, p, b) } : b;
+      drawList.push([b.y, () => drawBunker(ctx, shown, b.x - cx, b.y - cy, t)]);
+    }
+    const drop = state.race?.drop;
+    if (drop && onScreen(drop.x, drop.y)) {
+      const falling = drop.landed ? 0 : drop.landsAt - state.time;
+      if (drop.landed || falling < CONFIG.race.dropFallSeconds) {
+        drawList.push([drop.y, () => drawDrop(ctx, drop, Math.round(drop.x - cx), Math.round(drop.y - cy), t, Math.max(0, falling) / CONFIG.race.dropFallSeconds)]);
+      }
+    }
     // One ship per player; each shows its owner's installed parts.
     for (const owner of state.players) {
       const ship = shipOf(state, owner);
@@ -124,7 +136,7 @@ export class Renderer {
     const me = localPlayer(state);
     const ia = me.interaction;
     if (ia.progress <= 0 || !ia.target) return;
-    const anchor = ia.target.kind === 'ship' ? shipOf(state, me) : ia.target.bunker;
+    const anchor = ia.target.kind === 'ship' ? shipOf(state, me) : ia.target.kind === 'drop' ? state.race!.drop : ia.target.bunker;
     const x = anchor.x - this.camX;
     const y = anchor.y - (ia.target.kind === 'ship' ? 30 : 34) - this.camY;
     rect(this.ctx, x - 10, y, 20, 3, '#0b0a14');
@@ -157,7 +169,9 @@ export class Renderer {
     for (const o of state.players) {
       if (o !== p && o.lamp && onScreen(o.x, o.y)) hole(o.x - cx + o.facing * 6, o.y - cy - 8, 58, 1);
     }
-    const litBunkers = world.bunkers.filter((b) => (b.kind === 'supply' || !b.looted) && onScreen(b.x, b.y));
+    const litBunkers = world.bunkers.filter((b) => (b.kind === 'supply' || !looksLooted(state, p, b)) && onScreen(b.x, b.y));
+    const drop = state.race?.drop;
+    if (drop?.landed && onScreen(drop.x, drop.y)) hole(drop.x - cx, drop.y - cy - 8, 30, 0.8);
     for (const b of litBunkers) hole(b.x - cx, b.y - cy - 12, 32, 0.8);
     for (const ship of world.ships) hole(ship.x - cx, ship.y - cy - 10, 36, 0.7);
     for (const c of world.crystals) if (onScreen(c.x, c.y)) hole(c.x - cx, c.y - cy - 4, 16, 0.6);
