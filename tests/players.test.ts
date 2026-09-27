@@ -116,10 +116,11 @@ describe('creepers with several players', () => {
     one.x = c.x + 200;
     one.y = c.y;
     const two = addPlayer(s, c.x - 40, c.y);
-    const before = c.x;
+    const gap = () => Math.hypot(c.x - two.x, c.y - two.y);
+    const before = gap();
     for (let i = 0; i < 10; i++) step(s, NO_INPUT, DT);
     expect(c.mode).toBe('chase');
-    expect(c.x).toBeLessThan(before);
+    expect(gap()).toBeLessThan(before);
   });
 
   it('hurt the player they hit, not the other one', () => {
