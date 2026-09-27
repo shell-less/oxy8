@@ -17,6 +17,7 @@ export class StarMap {
   private benchSub = document.getElementById('workbench-sub') as HTMLElement;
   private rows: Destination[] = [];
   private closeBtn = document.getElementById('starmap-close') as HTMLButtonElement;
+  private title = document.getElementById('starmap-title') as HTMLElement;
 
   constructor(
     private onPick: (index: number, row: Destination) => void,
@@ -48,7 +49,10 @@ export class StarMap {
     const focusedRecipe = (document.activeElement as HTMLElement | null)?.dataset.recipe;
     this.benchSub.textContent = `Schroot: ${me.inventory.scrap}`;
     this.bench.replaceChildren(...RECIPES.map((r) => this.renderRecipe(state, r)));
-    this.rows = destinations(state);
+    const race = state.mode === 'race';
+    this.root.classList.toggle('race', race);
+    this.title.textContent = race ? `Schip van speler ${state.viewer + 1}` : 'Schip';
+    this.rows = race ? [] : destinations(state);
     this.sub.textContent = `Energie: ${Math.round(me.energy)} · een vlucht kost ${CONFIG.energy.flightCost}`;
     const touch = document.documentElement.classList.contains('touch');
     this.foot.textContent = touch ? 'Tik op een planeet om te vliegen' : 'Klik of kies met 1-9 · Esc: terug naar de planeet';

@@ -138,7 +138,13 @@ A deadlock is still possible (one player has the parts, the other the energy). T
 
 ### A fair, mirrored planet
 
-Race planets are point-symmetric around the centre: every bunker, rock, crystal, scrap piece and creeper route has a mirror on the other side, and the ships stand mirrored too. With an odd number of parts bunkers and energy cells, one of each sits exactly in the centre, the most contested spot on the map. Size about 120 x 80 tiles (the solo planets are 90 x 60); a player reaches the centre in about a minute. Both clients generate the same world from the match seed.
+Race planets are point-symmetric around the centre: every bunker, rock, crystal, pool, scrap piece and creeper route has a mirror on the other side, and the ships stand mirrored at the left and right end. Size 120 x 80 tiles (the solo planets are 90 x 60), with the same density of rocks and crystals as the solo planet of that type. Both clients generate the same world from the match seed (`generateRaceWorld` in `src/world/race.ts`).
+
+With an odd number of parts bunkers and energy cells, one of each sits by the centre, the most contested spot on the map. Two bunkers cannot both stand exactly on the centre, so the centre parts bunker and the centre supply bunker (with a cell) stand on either side of it, across the line between the ships. Both are then exactly as far from either ship, and no rocks or crystals stand within 90 px of the centre, so the way in is the same for both players.
+
+On top of the seven parts bunkers there are five supply bunkers: the centre one with a cell, a mirrored pair with cells and a mirrored pair without. Every parts bunker and the pair with cells has a creeper; mirrored bunkers get mirrored creepers (same kind and route, starting at the opposite point). The planet type is picked from the match seed, so each of the four comes up about equally often.
+
+The ships stand about 780 px from the centre, which is roughly 15 seconds of walking in a straight line; detours around rocks and creepers make it longer. If matches feel too short, move the ships further out (`CONFIG.race`).
 
 ### Hidden and visible information
 
@@ -160,6 +166,16 @@ Race planets are point-symmetric around the centre: every bunker, rock, crystal,
 
 Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px; a faint beep within ~60 px that speeds up as you get closer; at night the helmet lamp makes a bomb glint. The owner sees their own bombs faintly. The strongest play: a bomb next to a bunker you already emptied, since the opponent cannot see that it is empty.
 
+### Playing locally
+
+Until the server exists, a race is played by two players on one keyboard. The title screen offers "Race (lokaal)" in development, with `?debug`, or with `?race` in the address; the live game does not show it otherwise.
+
+- **Player 1:** WASD, E action, F lamp, Q bottle, R beacon.
+- **Player 2:** arrows, Enter action, right Shift lamp, / bottle, . beacon.
+- **Tab** switches the screen between the players: camera, HUD, minimap, tips and toasts follow whoever is shown. Both players can always move. Opening the workbench switches the screen to the player who opened it.
+
+Player 2's suit has a lime stripe instead of orange. The HUD names whose screen it is and counts down to the time limit. At the ship, a repaired engine offers "Opstijgen" (costs the flight energy) instead of the star map; the ship menu shows only the workbench. Race mode never writes the solo save.
+
 ### Technology
 
 Hidden information decides the architecture. If both browsers held the full state, the developer tools would show every bomb and every empty bunker. So the server is authoritative and sends each player only what they may see.
@@ -180,8 +196,11 @@ Hidden information decides the architecture. If both browsers held the full stat
 ### Build order
 
 1. ~~Refactor the state to several players, with no visible change to solo play.~~ Creepers go for the nearest player, meteors aim at the players in turn, toxic pools drain only who stands in them.
-2. Mirrored race generation.
-3. Race rules: hidden bunkers, bombs and defusing, supply drop, win and loss. Testable with two players on one keyboard, so balancing can start before there is a server.
+2. ~~Mirrored race generation.~~ A debug button in `npm run dev` ("Raceplaneet") lands you on a random race planet; the second player stands still at the other ship.
+3. Race rules, testable with two players on one keyboard, so balancing can start before there is a server. Split in three:
+   - ~~3a. Local race: two players on one keyboard, Tab to switch, launch to win, every death loses, time limit, result screen.~~
+   - 3b. Hidden empty bunkers and the supply drop.
+   - 3c. Bombs and defusing.
 4. Room server and room codes.
 5. Rematch, mobile testing, balance.
 

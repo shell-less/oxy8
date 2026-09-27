@@ -7,6 +7,7 @@ const ACTION_LABELS: Record<Action, string> = {
   open: 'Openen',
   install: 'Inbouwen',
   starmap: 'Schip',
+  launch: 'Opstijgen',
   none: 'Actie',
 };
 

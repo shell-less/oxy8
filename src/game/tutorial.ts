@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
 import { anyCraftable } from './crafting';
-import { isRepaired, localPlayer, type GameState } from './state';
+import { isRepaired, localPlayer, type GameMode, type GameState } from './state';
 
 /** Context the game state does not track itself. */
 export interface TipContext {
@@ -16,6 +16,8 @@ export interface Tip {
   /** The same tip for touch screens, when `text` names keys. */
   touchText?: string;
   when: (state: GameState, ctx: TipContext) => boolean;
+  /** Game modes the tip belongs to. Defaults to both. */
+  modes?: readonly GameMode[];
 }
 
 /** Tips are about the local player: the one reading them. */
@@ -31,6 +33,18 @@ const darkness = (state: GameState) => darknessAt(hourOf(state.time));
  * Keep them short: the game should explain itself by playing.
  */
 export const TIPS: readonly Tip[] = [
+  {
+    id: 'race-goal',
+    text: `Race: bouw als eerste ${CONFIG.race.partsToWin} onderdelen in en stijg op. Er zijn er niet genoeg voor twee. Wie doodgaat, verliest.`,
+    when: () => true,
+    modes: ['race'],
+  },
+  {
+    id: 'race-switch',
+    text: 'Tab wisselt het beeld tussen speler 1 en speler 2. Allebei kunnen jullie altijd lopen.',
+    when: (_, ctx) => ctx.secondsOnPlanet > CONFIG.tips.firstDelay,
+    modes: ['race'],
+  },
   {
     id: 'move',
     text: 'Loop met WASD of de pijltjes. Je zuurstof (O2) loopt langzaam leeg.',
@@ -112,20 +126,28 @@ export const TIPS: readonly Tip[] = [
     when: (s) => !me(s).lamp && darkness(s) > 0.3,
   },
   {
+    id: 'race-launch',
+    text: 'Je motor is klaar. Houd de actie vast bij je schip om op te stijgen en te winnen.',
+    when: (s) => isRepaired(s),
+    modes: ['race'],
+  },
+  {
     id: 'starmap',
     text: 'Je motor is klaar. Houd E vast bij je schip en kies op de sterrenkaart je volgende planeet.',
     touchText: 'Je motor is klaar. Houd de actieknop vast bij je schip en kies op de sterrenkaart je volgende planeet.',
     when: (s) => isRepaired(s),
+    modes: ['solo'],
   },
   {
     id: 'return',
     text: 'Op de sterrenkaart zie je hoeveel energiecellen er nog op eerdere planeten liggen. Terugvliegen kan altijd.',
     when: (s) => s.planetIndex > 0,
+    modes: ['solo'],
   },
 ];
 
 /** The first unseen tip whose moment has come, or null. */
 export function nextTip(state: GameState, ctx: TipContext, seen: ReadonlySet<string>): Tip | null {
   if (state.status !== 'playing') return null;
-  return TIPS.find((t) => !seen.has(t.id) && t.when(state, ctx)) ?? null;
+  return TIPS.find((t) => !seen.has(t.id) && (t.modes ?? ['solo', 'race']).includes(state.mode) && t.when(state, ctx)) ?? null;
 }

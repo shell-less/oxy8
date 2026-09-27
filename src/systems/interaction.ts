@@ -1,10 +1,11 @@
 import { CONFIG } from '../config';
 import type { InputState } from '../core/input';
 import { unlockIfRepaired } from '../game/campaign';
-import { emit, isRepaired, type GameState, type Player, type Target } from '../game/state';
+import { emit, emitTo, isRepaired, shipOf, type GameState, type Player, type Target } from '../game/state';
 import { PLANETS } from '../world/planets';
 
-export type Action = 'install' | 'starmap' | 'open' | 'none';
+/** 'launch' is race mode only: a repaired ship takes off and wins the race. */
+export type Action = 'install' | 'starmap' | 'launch' | 'open' | 'none';
 
 export interface ActionInfo {
   action: Action;
@@ -28,7 +29,7 @@ export function findTarget(state: GameState, p: Player): Target | null {
       best = { kind: 'bunker', bunker };
     }
   }
-  const ship = state.world.ship;
+  const ship = shipOf(state, p);
   if (!best && Math.hypot(p.x - ship.x, p.y - (ship.y + 2)) < shipRange) best = { kind: 'ship' };
   return best;
 }
@@ -45,11 +46,17 @@ export function describe(state: GameState, p: Player, target: Target | null): Ac
     const cost = CONFIG.energy.installCost;
     const waiting = p.partsCarried > p.partsInstalled;
     if (waiting && p.energy >= cost) return info(`[E] Onderdeel inbouwen (-${cost} energie)`, 'install', ia.installSeconds);
+    const race = state.mode === 'race';
+    if (race && !waiting && isRepaired(state, p)) {
+      const flight = CONFIG.energy.flightCost;
+      if (p.energy >= flight) return info(`[E] Opstijgen (-${flight} energie)`, 'launch', ia.installSeconds);
+      return info(`Motor klaar, maar te weinig energie om op te stijgen (${flight} nodig) · [E] Werkbank`, 'starmap', ia.starMapSeconds);
+    }
     let status: string;
     if (waiting) status = `Te weinig energie om in te bouwen (${cost} nodig)`;
     else if (isRepaired(state, p)) status = PLANETS[state.planetIndex + 1] ? 'Motor klaar voor de volgende planeet' : 'Motor klaar voor de reis naar huis';
     else status = `Motor mist nog ${needed - p.partsInstalled} onderdelen`;
-    return info(`${status} · [E] Schip: werkbank en sterrenkaart`, 'starmap', ia.starMapSeconds);
+    return info(`${status} · [E] ${race ? 'Werkbank' : 'Schip: werkbank en sterrenkaart'}`, 'starmap', ia.starMapSeconds);
   }
 
   const b = target.bunker;
@@ -104,25 +111,35 @@ function canTakeCell(p: Player): boolean {
   return p.energy + CONFIG.energy.cellAmount <= CONFIG.energy.max;
 }
 
+/** Race mode: the ship takes off and this player wins. */
+function launch(state: GameState, p: Player): void {
+  const ship = shipOf(state, p);
+  p.energy -= CONFIG.energy.flightCost;
+  state.race!.result = { winner: p.id, reason: 'launch' };
+  state.status = 'over';
+  emit(state, { type: 'burst', x: ship.x - 24, y: ship.y - 8, color: '#ffb347', count: 30 });
+}
+
 function perform(state: GameState, p: Player, target: Target, action: Action): void {
   const needed = state.world.planet.partsNeeded;
   if (target.kind === 'ship') {
     if (action === 'starmap') {
-      emit(state, { type: 'starmap' });
+      emitTo(state, p, { type: 'starmap' });
       return;
     }
-    const ship = state.world.ship;
+    if (action === 'launch') {
+      launch(state, p);
+      return;
+    }
+    const ship = shipOf(state, p);
     p.partsInstalled++;
     p.energy -= CONFIG.energy.installCost;
     emit(state, { type: 'burst', x: ship.x - 13 + (p.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });
-    const unlocked = unlockIfRepaired(state, p);
-    emit(state, { type: 'sound', name: unlocked ? 'repaired' : 'install' });
-    emit(state, {
-      type: 'toast',
-      text: unlocked
-        ? 'Motor gerepareerd. Open de sterrenkaart om verder te reizen'
-        : `Onderdeel ingebouwd (${p.partsInstalled}/${needed})`,
-    });
+    const repaired = state.mode === 'race' ? isRepaired(state, p) : unlockIfRepaired(state, p);
+    emitTo(state, p, { type: 'sound', name: repaired ? 'repaired' : 'install' });
+    let text = `Onderdeel ingebouwd (${p.partsInstalled}/${needed})`;
+    if (repaired) text = state.mode === 'race' ? 'Motor klaar. Houd E vast om op te stijgen' : 'Motor gerepareerd. Open de sterrenkaart om verder te reizen';
+    emitTo(state, p, { type: 'toast', text });
     emit(state, { type: 'progress' });
     return;
   }
@@ -132,8 +149,8 @@ function perform(state: GameState, p: Player, target: Target, action: Action): v
     b.looted = true;
     p.partsCarried++;
     emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#ffb347', count: 20 });
-    emit(state, { type: 'sound', name: 'part' });
-    emit(state, { type: 'toast', text: `Scheepsonderdeel gevonden (${p.partsCarried}/${needed})` });
+    emitTo(state, p, { type: 'sound', name: 'part' });
+    emitTo(state, p, { type: 'toast', text: `Scheepsonderdeel gevonden (${p.partsCarried}/${needed})` });
     emit(state, { type: 'progress' });
     return;
   }
@@ -148,7 +165,7 @@ function perform(state: GameState, p: Player, target: Target, action: Action): v
     text += `, energiecel +${CONFIG.energy.cellAmount}`;
   }
   emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#4fd8ff', count: 16 });
-  emit(state, { type: 'sound', name: 'supply' });
-  emit(state, { type: 'toast', text });
+  emitTo(state, p, { type: 'sound', name: 'supply' });
+  emitTo(state, p, { type: 'toast', text });
   emit(state, { type: 'progress' });
 }

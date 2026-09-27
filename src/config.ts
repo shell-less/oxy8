@@ -180,4 +180,31 @@ export const CONFIG = {
       extraDrainPerSecond: 4,
     },
   },
+  /** Race mode: two players, one planet, first to launch wins. See docs/design.md. */
+  race: {
+    /** Race planets are larger than solo planets (90 x 60). */
+    tilesX: 120,
+    tilesY: 80,
+    /** Parts each player must install to launch. Seven on the planet: any split gives one player four. */
+    partsToWin: 4,
+    partsBunkers: 7,
+    /** Supply bunkers: one near the centre and two mirrored pairs. */
+    supplyBunkers: 5,
+    /** Energy cells: the centre supply bunker and one mirrored pair. */
+    energyCells: 3,
+    /** Supply bunkers with a creeper patrol, besides every parts bunker: the mirrored pair with cells. */
+    guardedSupplyBunkers: 2,
+    startEnergy: 30,
+    /** After this many seconds the race ends: most installed parts wins, then most energy, else a draw. */
+    timeLimit: 720,
+    /** Ships stand this far left and right of the centre, and up to shipOffsetY above or below it. */
+    shipOffsetX: 780,
+    shipOffsetY: 220,
+    /** No rocks or crystals within this radius of the centre, so both players reach it the same way. */
+    centreClearRadius: 90,
+    /** The centre parts bunker and centre supply bunker sit this far from the centre, across the line between the ships. */
+    centrePairOffset: 34,
+    /** Rocks, crystals and pools per area, relative to the solo planet of the same type. */
+    density: 1,
+  },
 } as const;

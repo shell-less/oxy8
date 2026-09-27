@@ -28,7 +28,7 @@ src/
   main.ts            Bootstrap, game loop, overlay flow, debug buttons.
   core/              rng (seeded), clock (day/night), input (keyboard to InputState).
   world/             themes (look + hazard per planet type), planets (fixed order),
-                     generate (pure, deterministic layout), types.
+                     generate (pure, deterministic layout), race (mirrored race planets from a match seed), types.
   game/              state (GameState, landOn, events), update (step: runs the systems in order),
                      campaign (per-planet progress, engine unlocks, leftovers), travel (star map rows,
                      flying), save (localStorage, validated, versioned, migrated), tutorial (tips and when to show them),

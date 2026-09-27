@@ -33,8 +33,9 @@ export function movePlayer(state: GameState, p: Player, moveX: number, moveY: nu
 }
 
 /** Marks tiles around the player as explored on their minimap. */
-export function revealAround(player: Player, radius: number): void {
-  const { tileSize, tilesX, tilesY } = CONFIG.world;
+export function revealAround(state: GameState, player: Player, radius: number): void {
+  const { tileSize } = CONFIG.world;
+  const { tilesX, tilesY } = state.world;
   const tx = Math.floor(player.x / tileSize);
   const ty = Math.floor(player.y / tileSize);
   for (let y = -radius; y <= radius; y++) {

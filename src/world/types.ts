@@ -91,9 +91,15 @@ export interface Creeper extends Point {
 
 export interface World {
   planet: PlanetDef;
+  /** Size in tiles; the minimap has one pixel per tile. Solo planets use CONFIG.world, race planets CONFIG.race. */
+  tilesX: number;
+  tilesY: number;
   width: number;
   height: number;
+  /** The first player's ship. Same as ships[0]. */
   ship: Point;
+  /** One ship per player: solo planets have one, race planets two, mirrored. */
+  ships: Point[];
   bunkers: Bunker[];
   rocks: Circle[];
   crystals: Crystal[];

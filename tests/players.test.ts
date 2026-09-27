@@ -12,7 +12,7 @@ import { step } from '../src/game/update';
 const DT = 1 / 60;
 
 function addPlayer(state: GameState, x: number, y: number): Player {
-  const p = newPlayer(state.players.length, x, y, CONFIG.player.startEnergy);
+  const p = newPlayer(state.players.length, state.world, x, y, CONFIG.player.startEnergy);
   state.players.push(p);
   return p;
 }
@@ -100,7 +100,8 @@ describe('several players', () => {
     const [one] = s.players;
     const two = addPlayer(s, s.world.width - 40, s.world.height - 40);
     step(s, NO_INPUT, DT);
-    const { tileSize, tilesX } = CONFIG.world;
+    const { tileSize } = CONFIG.world;
+    const { tilesX } = s.world;
     const tileOf = (p: Player) => Math.floor(p.y / tileSize) * tilesX + Math.floor(p.x / tileSize);
     expect(one.explored[tileOf(two)]).toBe(0);
     expect(two.explored[tileOf(two)]).toBe(1);
