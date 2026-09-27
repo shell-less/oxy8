@@ -16,7 +16,16 @@ npm run typecheck
 npm run build
 ```
 
-Run `npm run typecheck && npm test` before every commit. CI runs the same, plus the build.
+The race server lives in `server/` with its own `package.json` (only dev dependencies):
+
+```bash
+cd server
+npm run dev         # wrangler dev: the Worker and rooms on http://127.0.0.1:8787
+npm run smoke       # end-to-end check against it (or SERVER=https://... npm run smoke)
+npm run typecheck
+```
+
+Run `npm run typecheck && npm test` before every commit (and `npm run typecheck` in `server/` when you touch it). CI runs the same, plus the build. Merging to `main` deploys the game to GitHub Pages and, when `server/` or `src/` changed, the race server to Cloudflare.
 
 ## Architecture
 
@@ -26,7 +35,7 @@ The game logic knows nothing about drawing. Rendering reads state and never chan
 src/
   config.ts          All balance numbers. Tune here, not in systems.
   main.ts            Bootstrap, game loop, overlay flow, debug buttons.
-  core/              rng (seeded), clock (day/night), input (keyboard to InputState).
+  core/              rng (seeded), clock (day/night), input (InputState, merging, the touch stick maths).
   world/             themes (look + hazard per planet type), planets (fixed order),
                      generate (pure, deterministic layout), race (mirrored race planets from a match seed), types.
   game/              state (GameState, landOn, events), update (step: runs the systems in order),
@@ -40,8 +49,10 @@ src/
                      player may see), apply (snapshots onto the browser's mirror state), match (one room,
                      host-independent), codes (room codes). No sockets or Cloudflare code here.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
-                     ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench), tips and touch (on-screen controls, DOM).
+                     ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench), tips, keyboard and touch (input sources, DOM).
 tests/               Vitest tests for world generation and systems.
+server/              The race server: a Cloudflare Worker (index.ts) and one Durable Object per room
+                     (room.ts), a thin shell around net/match.ts. wrangler.jsonc, scripts/smoke.mjs.
 ```
 
 ### Rules that keep it maintainable

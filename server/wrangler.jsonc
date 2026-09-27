@@ -1,0 +1,18 @@
+{
+  // Oxy8 race server. One Durable Object per room, addressed by the four-letter room code.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "oxy8-race",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [{ "name": "RACE_ROOM", "class_name": "RaceRoom" }]
+  },
+  // SQLite-backed Durable Objects are the ones available on the free plan.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RaceRoom"] }],
+  "vars": {
+    // Browsers from other sites may not open rooms. Tools without an Origin header (tests) may.
+    "ALLOWED_ORIGINS": "https://shell-less.github.io,http://localhost:5173,http://127.0.0.1:5173"
+  },
+  "observability": { "enabled": true }
+}

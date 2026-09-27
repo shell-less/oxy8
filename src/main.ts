@@ -1,7 +1,8 @@
 import { CONFIG } from './config';
 import './style.css';
 import { darknessAt, formatClock, hourOf } from './core/clock';
-import { Keyboard, mergeInput } from './core/input';
+import { mergeInput } from './core/input';
+import { Keyboard } from './render/keyboard';
 import { unlockIfRepaired } from './game/campaign';
 import { craft } from './game/crafting';
 import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
