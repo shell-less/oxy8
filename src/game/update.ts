@@ -8,7 +8,7 @@ import { ageBeacons, pickUpScrap, updateItems } from '../systems/items';
 import { movePlayer, revealAround } from '../systems/movement';
 import { updateLamp, updateOxygen } from '../systems/survival';
 import { isStranded } from './campaign';
-import type { GameState, Player, RaceResult, RaceState } from './state';
+import { emit, type GameState, type Player, type RaceResult, type RaceState, type SupplyDrop } from './state';
 
 /**
  * Advances the game by dt seconds. The order of the systems matters: hazards set the rules for this frame.
@@ -64,6 +64,7 @@ export function step(state: GameState, input: InputState | readonly InputState[]
 function updateRace(state: GameState, race: RaceState, dt: number): void {
   race.elapsed += dt;
   if (state.status !== 'playing') return;
+  updateDrop(state, race.drop);
   let result: RaceResult | null = null;
   const alive = state.players.filter((p) => p.oxygen > 0);
   if (alive.length < state.players.length) {
@@ -85,4 +86,21 @@ function leaderAtTime(players: readonly Player[]): number | null {
   if (!second) return first.id;
   const [a, b] = [score(first), score(second)];
   return a[0] === b[0] && a[1] === b[1] ? null : first.id;
+}
+
+/** The supply pod announces itself, then lands in the centre where both minimaps show it. */
+function updateDrop(state: GameState, drop: SupplyDrop): void {
+  if (drop.landed) return;
+  if (!drop.warned && state.time >= drop.landsAt - CONFIG.race.dropWarnSeconds) {
+    drop.warned = true;
+    emit(state, { type: 'toast', text: 'Een bevoorradingscapsule landt zo in het midden' });
+    emit(state, { type: 'sound', name: 'storm-warning' });
+  }
+  if (state.time >= drop.landsAt) {
+    drop.landed = true;
+    emit(state, { type: 'toast', text: 'De capsule is geland: een onderdeel en een energiecel' });
+    emit(state, { type: 'sound', name: 'drop' });
+    emit(state, { type: 'burst', x: drop.x, y: drop.y, color: '#ffb347', count: 30 });
+    emit(state, { type: 'shake', amount: 0.3 });
+  }
 }

@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import type { InputState } from '../core/input';
 import { unlockIfRepaired } from '../game/campaign';
-import { emit, emitTo, isRepaired, shipOf, type GameState, type Player, type Target } from '../game/state';
+import { emit, emitTo, isRepaired, looksLooted, shipOf, type GameState, type Player, type SupplyDrop, type Target } from '../game/state';
 import { PLANETS } from '../world/planets';
 
 /** 'launch' is race mode only: a repaired ship takes off and wins the race. */
@@ -17,7 +17,7 @@ export interface ActionInfo {
   duration: number;
 }
 
-/** The nearest bunker in range, otherwise the ship if in range. */
+/** The nearest bunker (or landed supply pod) in range, otherwise the ship if in range. */
 export function findTarget(state: GameState, p: Player): Target | null {
   const { bunkerRange, shipRange } = CONFIG.interaction;
   let best: Target | null = null;
@@ -29,6 +29,8 @@ export function findTarget(state: GameState, p: Player): Target | null {
       best = { kind: 'bunker', bunker };
     }
   }
+  const drop = state.race?.drop;
+  if (drop?.landed && Math.hypot(p.x - drop.x, p.y - (drop.y + 4)) < Math.min(bunkerRange, bestDist)) best = { kind: 'drop' };
   const ship = shipOf(state, p);
   if (!best && Math.hypot(p.x - ship.x, p.y - (ship.y + 2)) < shipRange) best = { kind: 'ship' };
   return best;
@@ -59,9 +61,16 @@ export function describe(state: GameState, p: Player, target: Target | null): Ac
     return info(`${status} · [E] ${race ? 'Werkbank' : 'Schip: werkbank en sterrenkaart'}`, 'starmap', ia.starMapSeconds);
   }
 
+  if (target.kind === 'drop') {
+    const drop = state.race!.drop;
+    if (drop.part || (drop.energyCell && canTakeCell(p))) return info('[E] Capsule openen', 'open', ia.openPartsSeconds);
+    return info(drop.energyCell ? 'Capsule: energie te vol voor de energiecel' : 'Capsule is leeg');
+  }
+
   const b = target.bunker;
   if (b.kind === 'parts') {
-    return b.looted ? info('Bunker is leeg') : info('[E] Onderdelenbunker openen', 'open', ia.openPartsSeconds);
+    // A race bunker takes the full opening time even when it is empty; that time is the price of a guess.
+    return looksLooted(state, p, b) ? info('Bunker is leeg') : info('[E] Onderdelenbunker openen', 'open', ia.openPartsSeconds);
   }
   const cellFits = b.energyCell && canTakeCell(p);
   if (p.oxygen > 97 && !cellFits) {
@@ -102,7 +111,7 @@ export function updateInteraction(state: GameState, p: Player, input: InputState
 
 function sameTargetAs(a: Target | null, b: Target | null): boolean {
   if (!a || !b) return a === b;
-  if (a.kind === 'ship' || b.kind === 'ship') return a.kind === b.kind;
+  if (a.kind !== 'bunker' || b.kind !== 'bunker') return a.kind === b.kind;
   return a.bunker === b.bunker;
 }
 
@@ -118,6 +127,26 @@ function launch(state: GameState, p: Player): void {
   state.race!.result = { winner: p.id, reason: 'launch' };
   state.status = 'over';
   emit(state, { type: 'burst', x: ship.x - 24, y: ship.y - 8, color: '#ffb347', count: 30 });
+}
+
+/** The supply pod: the part goes to whoever opens it first, the cell only when all of it fits. */
+function openDrop(state: GameState, p: Player, drop: SupplyDrop): void {
+  const found: string[] = [];
+  if (drop.part) {
+    drop.part = false;
+    p.partsCarried++;
+    found.push(`scheepsonderdeel (${p.partsCarried}/${state.world.planet.partsNeeded})`);
+  }
+  if (drop.energyCell && canTakeCell(p)) {
+    drop.energyCell = false;
+    p.energy += CONFIG.energy.cellAmount;
+    found.push(`energiecel +${CONFIG.energy.cellAmount}`);
+  }
+  let text = `Capsule: ${found.join(', ')}`;
+  if (drop.energyCell) text += '. De energiecel blijft liggen: je energie is te vol';
+  emit(state, { type: 'burst', x: drop.x, y: drop.y - 8, color: '#ffe14a', count: 20 });
+  emitTo(state, p, { type: 'sound', name: 'part' });
+  emitTo(state, p, { type: 'toast', text });
 }
 
 function perform(state: GameState, p: Player, target: Target, action: Action): void {
@@ -144,8 +173,20 @@ function perform(state: GameState, p: Player, target: Target, action: Action): v
     return;
   }
 
+  if (target.kind === 'drop') {
+    openDrop(state, p, state.race!.drop);
+    return;
+  }
+
   const b = target.bunker;
   if (b.kind === 'parts') {
+    if (state.mode === 'race' && !p.knownEmpty.includes(b.id)) p.knownEmpty.push(b.id);
+    if (b.looted) {
+      // Only possible in a race: the other player got here first.
+      emitTo(state, p, { type: 'sound', name: 'deny' });
+      emitTo(state, p, { type: 'toast', text: 'Leeg. Iemand was je voor' });
+      return;
+    }
     b.looted = true;
     p.partsCarried++;
     emit(state, { type: 'burst', x: b.x, y: b.y - 10, color: '#ffb347', count: 20 });

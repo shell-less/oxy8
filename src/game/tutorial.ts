@@ -58,6 +58,18 @@ export const TIPS: readonly Tip[] = [
     when: (s) => s.world.bunkers.some((b) => near(s, b.x, b.y, CONFIG.tips.nearBunker)),
   },
   {
+    id: 'race-hidden',
+    text: 'In een race zie je niet of een onderdelenbunker leeg is. Dat merk je pas na het openen. Je eigen minikaart onthoudt welke je al had.',
+    when: (s) => s.world.bunkers.some((b) => b.kind === 'parts' && near(s, b.x, b.y, CONFIG.tips.nearBunker)),
+    modes: ['race'],
+  },
+  {
+    id: 'race-drop',
+    text: 'De capsule in het midden bevat een onderdeel en een energiecel. Wie hem eerst opent, krijgt het onderdeel.',
+    when: (s) => s.race?.drop.landed === true && (s.race.drop.part || s.race.drop.energyCell),
+    modes: ['race'],
+  },
+  {
     id: 'creeper',
     text: 'Kruipers kun je niet verslaan: een aanval scheurt je pak. Loop weg, ze zijn trager dan jij.',
     when: (s) => s.world.creepers.some((c) => near(s, c.x, c.y, CONFIG.tips.nearCreeper)),

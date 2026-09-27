@@ -30,7 +30,7 @@ export type PlayerEvent = Extract<GameEvent, { player?: number }>;
 export type SoundName =
   | 'pickup' | 'part' | 'supply' | 'install' | 'repaired' | 'craft'
   | 'hurt' | 'bottle' | 'beacon' | 'deny' | 'lamp'
-  | 'pounce' | 'land' | 'slide' | 'storm-warning';
+  | 'pounce' | 'land' | 'slide' | 'storm-warning' | 'drop';
 
 /**
  * 'stranded': too little energy to fly and no energy cells left on this planet. The game is over.
@@ -44,10 +44,22 @@ export interface RaceResult {
   reason: 'launch' | 'death' | 'time';
 }
 
+/** A pod that lands in the centre of a race planet with one part and one energy cell, to break a deadlock. */
+export interface SupplyDrop extends Point {
+  /** Game time (seconds since day 1, 00:00) at which it lands. */
+  landsAt: number;
+  warned: boolean;
+  landed: boolean;
+  /** Still inside: the first to open the pod takes the part; the cell only when all of it fits. */
+  part: boolean;
+  energyCell: boolean;
+}
+
 export interface RaceState {
   /** Seconds since the race started. */
   elapsed: number;
   result: RaceResult | null;
+  drop: SupplyDrop;
 }
 
 /**
@@ -80,6 +92,11 @@ export interface Player {
   inPool: boolean;
   /** One byte per tile, 1 when revealed on this player's minimap. */
   explored: Uint8Array;
+  /**
+   * Race mode: ids of parts bunkers this player knows are empty, because they emptied them or
+   * found them empty. Race bunkers never show whether they are empty; solo bunkers always do.
+   */
+  knownEmpty: number[];
 }
 
 export interface Meteor { x: number; y: number; timeLeft: number }
@@ -114,7 +131,8 @@ export interface HazardState {
   coldMultiplier: number;
 }
 
-export type Target = { kind: 'ship' } | { kind: 'bunker'; bunker: Bunker };
+/** 'drop' is the race supply pod. */
+export type Target = { kind: 'ship' } | { kind: 'bunker'; bunker: Bunker } | { kind: 'drop' };
 
 export interface InteractionState {
   target: Target | null;
@@ -195,7 +213,20 @@ export function startRace(matchSeed: number): GameState {
     planetIndex: PLANETS.findIndex((p) => p.theme === world.planet.theme),
     players: [newPlayer(0, world, spawn.x, spawn.y, energy), newPlayer(1, world, other.x, other.y, energy)],
     campaign: newCampaign(),
-    race: { elapsed: 0, result: null },
+    race: { elapsed: 0, result: null, drop: newDrop(world) },
+  };
+}
+
+function newDrop(world: World): SupplyDrop {
+  const R = CONFIG.race;
+  return {
+    x: world.width / 2,
+    y: world.height / 2,
+    landsAt: ((R.dropDay - 1) * 24 + R.dropHour) / 24 * CONFIG.day.lengthSeconds,
+    warned: false,
+    landed: false,
+    part: true,
+    energyCell: true,
   };
 }
 
@@ -245,12 +276,22 @@ export function newPlayer(id: number, world: World, x: number, y: number, energy
     interaction: { target: null, progress: 0, latched: false },
     inPool: false,
     explored: new Uint8Array(world.tilesX * world.tilesY),
+    knownEmpty: [],
   };
 }
 
 /** The ship this player repairs and launches: their own on a race planet, the only one in solo play. */
 export function shipOf(state: GameState, player: Player): Point {
   return state.world.ships[player.id] ?? state.world.ship;
+}
+
+/**
+ * Whether a parts bunker looks empty to this player. Solo bunkers show it; race bunkers never do,
+ * so a player only knows the ones they emptied or opened in vain.
+ */
+export function looksLooted(state: GameState, player: Player, bunker: Bunker): boolean {
+  if (bunker.kind !== 'parts') return false;
+  return state.mode === 'race' ? player.knownEmpty.includes(bunker.id) : bunker.looted;
 }
 
 /** The player whose view the renderer, HUD, tips and minimap show. Index 0 in solo play. */
