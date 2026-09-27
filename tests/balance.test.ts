@@ -35,14 +35,14 @@ describe('energy budget', () => {
   it('an energy cell is never wasted on a full bar', () => {
     const s = landOn(0, { energy: E.max - E.cellAmount + 1 });
     s.world.creepers.length = 0;
-    s.oxygen = 50;
+    s.players[0].oxygen = 50;
     const b = s.world.bunkers.find((x) => x.energyCell)!;
-    s.player.x = b.x;
-    s.player.y = b.y + 4;
+    s.players[0].x = b.x;
+    s.players[0].y = b.y + 4;
     for (let t = 0; t < 1.5; t += 1 / 60) step(s, { ...NO_INPUT, interact: true }, 1 / 60);
-    expect(s.oxygen).toBeGreaterThan(95);
+    expect(s.players[0].oxygen).toBeGreaterThan(95);
     expect(b.energyCell).toBe(true);
-    expect(s.energy).toBe(E.max - E.cellAmount + 1);
+    expect(s.players[0].energy).toBe(E.max - E.cellAmount + 1);
   });
 });
 

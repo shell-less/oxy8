@@ -43,6 +43,7 @@ tests/               Vitest tests for world generation and systems.
 ### Rules that keep it maintainable
 
 - **Determinism.** Gameplay randomness comes from `createRng` with a seed derived from the planet (`deriveSeed(seed, salt)`). Never use `Math.random()` in `world/`, `game/` or `systems/`. Visual-only randomness in `render/` may use `Math.random()`.
+- **Players.** Everything that belongs to one astronaut (position, oxygen, energy, parts, inventory, lamp, interaction, minimap) lives on `Player` in `state.players`. Systems take the player they act on; `step()` takes one `InputState` or one per player. Solo play has one player; race mode will have two. Rendering, the HUD, tips and saving use `localPlayer(state)`.
 - **Events, not side effects.** Systems call `emit(state, …)` for toasts, particles, shake. The renderer drains `state.events` each frame.
 - **Config over constants.** New tunable numbers go in `config.ts` with a comment and a unit.
 - **Sprites in code.** Sprites are small rectangle drawings in `render/sprites.ts`, anchored at the foot point. Keep to whole pixels.

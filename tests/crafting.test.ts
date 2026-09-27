@@ -39,25 +39,25 @@ describe('scrap', () => {
   it('is picked up by walking over it', () => {
     const s = quiet();
     const piece = s.world.scrap[0];
-    s.player.x = piece.x;
-    s.player.y = piece.y;
+    s.players[0].x = piece.x;
+    s.players[0].y = piece.y;
     step(s, NO_INPUT, DT);
     expect(piece.taken).toBe(true);
-    expect(s.inventory.scrap).toBe(1);
+    expect(s.players[0].inventory.scrap).toBe(1);
     step(s, NO_INPUT, DT);
-    expect(s.inventory.scrap).toBe(1);
+    expect(s.players[0].inventory.scrap).toBe(1);
   });
 
   it('stays taken after flying away and back, and shows as leftover', () => {
     const s = quiet();
     s.world.scrap[0].taken = true;
     s.world.scrap[1].taken = true;
-    s.inventory.scrap = 2;
-    s.partsInstalled = s.world.planet.partsNeeded;
+    s.players[0].inventory.scrap = 2;
+    s.players[0].partsInstalled = s.world.planet.partsNeeded;
     s.campaign.unlocked = 1;
     const r = travel(s, 1);
     if (!r.ok) throw new Error(r.reason);
-    expect(r.state.inventory.scrap).toBe(2);
+    expect(r.state.players[0].inventory.scrap).toBe(2);
     expect(destinations(r.state)[0].scrap).toBe(C.scrapPerPlanet - 2);
     const back = travel(r.state, 0);
     if (!back.ok) throw new Error(back.reason);
@@ -68,59 +68,59 @@ describe('scrap', () => {
 describe('workbench', () => {
   it('costs scrap and respects carry limits', () => {
     const s = quiet();
-    s.inventory.scrap = 20;
+    s.players[0].inventory.scrap = 20;
     expect(craft(s, 'bottle').ok).toBe(true);
-    expect(s.inventory.scrap).toBe(20 - C.bottle.scrap);
-    expect(checkCraft(s, 'bottle').ok).toBe(false);
+    expect(s.players[0].inventory.scrap).toBe(20 - C.bottle.scrap);
+    expect(checkCraft(s.players[0], 'bottle').ok).toBe(false);
     craft(s, 'beacon');
     craft(s, 'beacon');
-    expect(s.inventory.beacons).toBe(C.beacon.carryMax);
-    expect(checkCraft(s, 'beacon').ok).toBe(false);
+    expect(s.players[0].inventory.beacons).toBe(C.beacon.carryMax);
+    expect(checkCraft(s.players[0], 'beacon').ok).toBe(false);
   });
 
   it('refuses without enough scrap', () => {
     const s = quiet();
-    s.inventory.scrap = 1;
+    s.players[0].inventory.scrap = 1;
     const r = craft(s, 'armour');
     expect(r.ok).toBe(false);
-    expect(s.inventory.armour).toBe(false);
-    expect(s.inventory.scrap).toBe(1);
+    expect(s.players[0].inventory.armour).toBe(false);
+    expect(s.players[0].inventory.scrap).toBe(1);
   });
 
   it('reinforces the suit only once', () => {
     const s = quiet();
-    s.inventory.scrap = 20;
+    s.players[0].inventory.scrap = 20;
     craft(s, 'armour');
-    expect(s.inventory.armour).toBe(true);
-    expect(checkCraft(s, 'armour').ok).toBe(false);
+    expect(s.players[0].inventory.armour).toBe(true);
+    expect(checkCraft(s.players[0], 'armour').ok).toBe(false);
   });
 });
 
 describe('items', () => {
   it('Q uses an oxygen bottle', () => {
     const s = quiet();
-    s.inventory.bottles = 1;
-    s.oxygen = 30;
+    s.players[0].inventory.bottles = 1;
+    s.players[0].oxygen = 30;
     step(s, { ...NO_INPUT, useBottle: true }, DT);
-    expect(s.oxygen).toBeCloseTo(30 + C.bottle.oxygen, 0);
-    expect(s.inventory.bottles).toBe(0);
+    expect(s.players[0].oxygen).toBeCloseTo(30 + C.bottle.oxygen, 0);
+    expect(s.players[0].inventory.bottles).toBe(0);
   });
 
   it('keeps the bottle when the tank is full', () => {
     const s = quiet();
-    s.inventory.bottles = 1;
+    s.players[0].inventory.bottles = 1;
     step(s, { ...NO_INPUT, useBottle: true }, DT);
-    expect(s.inventory.bottles).toBe(1);
+    expect(s.players[0].inventory.bottles).toBe(1);
   });
 
   it('a reinforced suit loses less oxygen to a creeper', () => {
     const s = landOn(0);
-    s.inventory.armour = true;
+    s.players[0].inventory.armour = true;
     const c = s.world.creepers[0];
-    s.player.x = c.x;
-    s.player.y = c.y;
+    s.players[0].x = c.x;
+    s.players[0].y = c.y;
     step(s, NO_INPUT, DT);
-    const lost = 100 - s.oxygen;
+    const lost = 100 - s.players[0].oxygen;
     expect(lost).toBeLessThan(CONFIG.oxygen.enemyHitDamage);
     expect(lost).toBeGreaterThanOrEqual(Math.round(CONFIG.oxygen.enemyHitDamage * C.armour.damageFactor));
   });
@@ -130,22 +130,22 @@ describe('items', () => {
     s.hazards.stormNext = 1e9;
     s.world.creepers.length = 1;
     const c = s.world.creepers[0];
-    s.inventory.beacons = 1;
+    s.players[0].inventory.beacons = 1;
     // Stand near the crawler, drop the beacon, walk away to the other side.
-    s.player.x = c.x + 40;
-    s.player.y = c.y;
+    s.players[0].x = c.x + 40;
+    s.players[0].y = c.y;
     step(s, { ...NO_INPUT, placeBeacon: true }, DT);
     expect(s.beacons).toHaveLength(1);
     const beacon = s.beacons[0];
-    s.player.x = c.x - 45;
+    s.players[0].x = c.x - 45;
     run(s, 4);
     expect(Math.hypot(c.x - beacon.x, c.y - beacon.y)).toBeLessThan(10);
-    expect(s.oxygen).toBeGreaterThan(90);
+    expect(s.players[0].oxygen).toBeGreaterThan(90);
   });
 
   it('beacons stop working after their lifetime', () => {
     const s = quiet();
-    s.inventory.beacons = 1;
+    s.players[0].inventory.beacons = 1;
     step(s, { ...NO_INPUT, placeBeacon: true }, DT);
     run(s, C.beacon.lifetime + 0.1);
     expect(s.beacons).toHaveLength(0);

@@ -18,8 +18,8 @@ function removeCreepers(state: GameState): void {
 }
 
 function standAt(state: GameState, x: number, y: number): void {
-  state.player.x = x;
-  state.player.y = y;
+  state.players[0].x = x;
+  state.players[0].y = y;
 }
 
 describe('day clock', () => {
@@ -36,8 +36,8 @@ describe('oxygen', () => {
     removeCreepers(s);
     s.hazards.stormNext = 1e9;
     run(s, 10);
-    expect(s.oxygen).toBeCloseTo(100 - 10 * CONFIG.oxygen.drainPerSecond, 0);
-    s.oxygen = 0.1;
+    expect(s.players[0].oxygen).toBeCloseTo(100 - 10 * CONFIG.oxygen.drainPerSecond, 0);
+    s.players[0].oxygen = 0.1;
     run(s, 1);
     expect(s.status).toBe('dead');
   });
@@ -50,7 +50,7 @@ describe('oxygen', () => {
     night.time = CONFIG.day.lengthSeconds * (23 / 24);
     run(day, 5);
     run(night, 5);
-    expect(100 - night.oxygen).toBeGreaterThan((100 - day.oxygen) * 1.5);
+    expect(100 - night.players[0].oxygen).toBeGreaterThan((100 - day.players[0].oxygen) * 1.5);
   });
 });
 
@@ -59,11 +59,11 @@ describe('creepers', () => {
     const s = landOn(0);
     const c = s.world.creepers[0];
     standAt(s, c.x, c.y);
-    const before = s.oxygen;
+    const before = s.players[0].oxygen;
     step(s, NO_INPUT, DT);
-    expect(before - s.oxygen).toBeGreaterThanOrEqual(CONFIG.oxygen.enemyHitDamage);
+    expect(before - s.players[0].oxygen).toBeGreaterThanOrEqual(CONFIG.oxygen.enemyHitDamage);
     expect(c.mode).toBe('return');
-    expect(s.player.invulnerable).toBeGreaterThan(0);
+    expect(s.players[0].invulnerable).toBeGreaterThan(0);
   });
 
   it('chase a nearby player but are slower', () => {
@@ -81,20 +81,20 @@ describe('helmet lamp', () => {
     const s = landOn(0);
     removeCreepers(s);
     run(s, 5);
-    expect(s.energy).toBe(CONFIG.player.startEnergy);
+    expect(s.players[0].energy).toBe(CONFIG.player.startEnergy);
     s.time = CONFIG.day.lengthSeconds * (23 / 24);
     run(s, 5);
-    expect(s.energy).toBeLessThan(CONFIG.player.startEnergy);
+    expect(s.players[0].energy).toBeLessThan(CONFIG.player.startEnergy);
   });
 
   it('switches off when energy runs out', () => {
     const s = landOn(0);
     removeCreepers(s);
     s.time = CONFIG.day.lengthSeconds * (23 / 24);
-    s.energy = 0.01;
+    s.players[0].energy = 0.01;
     run(s, 1);
-    expect(s.lamp).toBe(false);
-    expect(s.energy).toBe(0);
+    expect(s.players[0].lamp).toBe(false);
+    expect(s.players[0].energy).toBe(0);
   });
 });
 
@@ -107,11 +107,11 @@ describe('bunkers and ship', () => {
     const b = s.world.bunkers.find((x) => x.kind === 'parts')!;
     standAt(s, b.x, b.y + 4);
     run(s, 2, hold);
-    expect(s.partsCarried).toBe(1);
+    expect(s.players[0].partsCarried).toBe(1);
     expect(b.looted).toBe(true);
     run(s, 0.2);
     run(s, 2, hold);
-    expect(s.partsCarried).toBe(1);
+    expect(s.players[0].partsCarried).toBe(1);
   });
 
   it('a supply bunker refills oxygen and gives its energy cell only once', () => {
@@ -119,29 +119,29 @@ describe('bunkers and ship', () => {
     removeCreepers(s);
     const b = s.world.bunkers.find((x) => x.energyCell)!;
     standAt(s, b.x, b.y + 4);
-    s.oxygen = 40;
+    s.players[0].oxygen = 40;
     run(s, 1.5, hold);
-    expect(s.oxygen).toBeGreaterThan(95);
-    expect(s.energy).toBe(CONFIG.player.startEnergy + CONFIG.energy.cellAmount);
-    s.oxygen = 40;
+    expect(s.players[0].oxygen).toBeGreaterThan(95);
+    expect(s.players[0].energy).toBe(CONFIG.player.startEnergy + CONFIG.energy.cellAmount);
+    s.players[0].oxygen = 40;
     run(s, 0.2);
     run(s, 1.5, hold);
-    expect(s.oxygen).toBeGreaterThan(95);
-    expect(s.energy).toBe(CONFIG.player.startEnergy + CONFIG.energy.cellAmount);
+    expect(s.players[0].oxygen).toBeGreaterThan(95);
+    expect(s.players[0].energy).toBe(CONFIG.player.startEnergy + CONFIG.energy.cellAmount);
   });
 
   it('installing costs energy and completing the engine unlocks the next planet', () => {
     const s = landOn(0);
     removeCreepers(s);
-    s.partsCarried = s.world.planet.partsNeeded;
-    s.energy = 100;
+    s.players[0].partsCarried = s.world.planet.partsNeeded;
+    s.players[0].energy = 100;
     standAt(s, s.world.ship.x, s.world.ship.y + 20);
     for (let i = 0; i < s.world.planet.partsNeeded; i++) {
       run(s, 2, hold);
       run(s, 0.1);
     }
-    expect(s.partsInstalled).toBe(s.world.planet.partsNeeded);
-    expect(s.energy).toBe(100 - s.world.planet.partsNeeded * CONFIG.energy.installCost);
+    expect(s.players[0].partsInstalled).toBe(s.world.planet.partsNeeded);
+    expect(s.players[0].energy).toBe(100 - s.world.planet.partsNeeded * CONFIG.energy.installCost);
     expect(s.campaign.unlocked).toBe(1);
     run(s, 2, hold);
     expect(s.events.some((e) => e.type === 'starmap')).toBe(true);
@@ -150,22 +150,22 @@ describe('bunkers and ship', () => {
   it('refuses to install without enough energy', () => {
     const s = landOn(0);
     removeCreepers(s);
-    s.partsCarried = 1;
-    s.energy = 5;
+    s.players[0].partsCarried = 1;
+    s.players[0].energy = 5;
     standAt(s, s.world.ship.x, s.world.ship.y + 20);
     step(s, NO_INPUT, DT);
-    expect(describeAction(s, s.interaction.target)?.action).toBe('starmap');
+    expect(describeAction(s, s.players[0], s.players[0].interaction.target)?.action).toBe('starmap');
     run(s, 3, hold);
-    expect(s.partsInstalled).toBe(0);
-    expect(s.energy).toBe(5);
+    expect(s.players[0].partsInstalled).toBe(0);
+    expect(s.players[0].energy).toBe(5);
   });
 });
 
 describe('planet progression', () => {
   it('carries energy over and refills oxygen', () => {
     const s = landOn(1, { energy: 42 });
-    expect(s.energy).toBe(42);
-    expect(s.oxygen).toBe(100);
+    expect(s.players[0].energy).toBe(42);
+    expect(s.players[0].oxygen).toBe(100);
     expect(s.world.planet.partsNeeded).toBe(5);
   });
 });

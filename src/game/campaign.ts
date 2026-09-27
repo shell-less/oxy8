@@ -1,8 +1,11 @@
 import { CONFIG } from '../config';
 import { PLANETS } from '../world/planets';
-import type { GameState } from './state';
+import { localPlayer, type GameState, type Player } from './state';
 
-/** What has changed on a planet since it was generated. The world itself is regenerated from its seed. */
+/**
+ * What has changed on a planet since it was generated. Campaign progress is solo play only,
+ * so the per-player fields belong to the local player. The world itself is regenerated from its seed.
+ */
 export interface PlanetProgress {
   /** Ids of parts bunkers that are empty. */
   lootedBunkers: number[];
@@ -34,9 +37,9 @@ export function captureProgress(state: GameState): PlanetProgress {
     lootedBunkers: bunkers.filter((b) => b.kind === 'parts' && b.looted).map((b) => b.id),
     takenCells: bunkers.filter((b) => b.kind === 'supply' && !b.energyCell && b.id < firstBunkerWithoutCell(state)).map((b) => b.id),
     takenScrap: state.world.scrap.filter((x) => x.taken).map((x) => x.id),
-    partsCarried: state.partsCarried,
-    partsInstalled: state.partsInstalled,
-    explored: packBits(state.explored),
+    partsCarried: localPlayer(state).partsCarried,
+    partsInstalled: localPlayer(state).partsInstalled,
+    explored: packBits(localPlayer(state).explored),
   };
 }
 
@@ -55,9 +58,10 @@ export function applyProgress(state: GameState, progress: PlanetProgress): void 
   }
   const scrapTaken = new Set(progress.takenScrap);
   for (const x of state.world.scrap) x.taken = scrapTaken.has(x.id);
-  state.partsCarried = progress.partsCarried;
-  state.partsInstalled = progress.partsInstalled;
-  state.explored = unpackBits(progress.explored, state.explored.length);
+  const player = localPlayer(state);
+  player.partsCarried = progress.partsCarried;
+  player.partsInstalled = progress.partsInstalled;
+  player.explored = unpackBits(progress.explored, player.explored.length);
 }
 
 /** The campaign including the live progress of the current planet. Use this before leaving or saving. */
@@ -84,8 +88,8 @@ export function scrapLeft(state: GameState, planetIndex: number): number | null 
 }
 
 /** Called after an install. Completing this planet's upgrade lets the engine reach one planet further. */
-export function unlockIfRepaired(state: GameState): boolean {
-  if (state.partsInstalled < state.world.planet.partsNeeded) return false;
+export function unlockIfRepaired(state: GameState, player: Player): boolean {
+  if (player.partsInstalled < state.world.planet.partsNeeded) return false;
   const next = state.planetIndex + 1;
   if (state.campaign.unlocked >= next) return false;
   state.campaign.unlocked = next;
@@ -97,7 +101,7 @@ export function unlockIfRepaired(state: GameState): boolean {
  * left on this planet to change that.
  */
 export function isStranded(state: GameState): boolean {
-  return state.energy < flightCost() && !state.world.bunkers.some((b) => b.energyCell);
+  return localPlayer(state).energy < flightCost() && !state.world.bunkers.some((b) => b.energyCell);
 }
 
 export function flightCost(): number {

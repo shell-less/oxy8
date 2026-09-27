@@ -10,8 +10,8 @@ describe('sound events', () => {
     const s = landOn(0);
     s.world.creepers.length = 0;
     const piece = s.world.scrap[0];
-    s.player.x = piece.x;
-    s.player.y = piece.y;
+    s.players[0].x = piece.x;
+    s.players[0].y = piece.y;
     step(s, NO_INPUT, 1 / 60);
     expect(sounds(s)).toContain('pickup');
   });
@@ -19,8 +19,8 @@ describe('sound events', () => {
   it('a creeper hit makes a sound', () => {
     const s = landOn(0);
     const c = s.world.creepers[0];
-    s.player.x = c.x;
-    s.player.y = c.y;
+    s.players[0].x = c.x;
+    s.players[0].y = c.y;
     step(s, NO_INPUT, 1 / 60);
     expect(sounds(s)).toContain('hurt');
   });

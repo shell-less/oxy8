@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import type { GameState } from '../game/state';
+import { localPlayer, type GameState } from '../game/state';
 
 /** One pixel per tile. Only explored tiles and the bunkers on them are shown. */
 export class Minimap {
@@ -14,18 +14,19 @@ export class Minimap {
 
   /** Redraws a few times per second; the blinking player dot uses render time t. */
   update(state: GameState, dt: number, t: number): void {
+    const me = localPlayer(state);
     this.timer -= dt;
     if (this.timer > 0) return;
     this.timer = 0.15;
     const { tilesX: W, tilesY: H, tileSize: T } = CONFIG.world;
     const ctx = this.ctx;
     const world = state.world;
-    const explored = (x: number, y: number) => state.explored[Math.floor(y / T) * W + Math.floor(x / T)] === 1;
+    const explored = (x: number, y: number) => me.explored[Math.floor(y / T) * W + Math.floor(x / T)] === 1;
 
     ctx.fillStyle = '#07060f';
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = world.planet.theme.minimap;
-    for (let i = 0; i < W * H; i++) if (state.explored[i]) ctx.fillRect(i % W, Math.floor(i / W), 1, 1);
+    for (let i = 0; i < W * H; i++) if (me.explored[i]) ctx.fillRect(i % W, Math.floor(i / W), 1, 1);
 
     ctx.fillStyle = '#3f9a2c';
     for (const p of world.pools) {
@@ -44,7 +45,7 @@ export class Minimap {
     ctx.fillRect(Math.floor(world.ship.x / T) - 1, Math.floor(world.ship.y / T) - 1, 3, 2);
     if (Math.sin(t * 8) > -0.5) {
       ctx.fillStyle = '#7dff8a';
-      ctx.fillRect(Math.floor(state.player.x / T), Math.floor(state.player.y / T), 1, 1);
+      ctx.fillRect(Math.floor(me.x / T), Math.floor(me.y / T), 1, 1);
     }
   }
 }

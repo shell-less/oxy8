@@ -23,8 +23,8 @@ function setup(): { s: GameState; c: Creeper } {
   s.world.creepers.length = 1;
   s.hazards.meteorTimer = 1e9;
   const c = s.world.creepers[0];
-  s.player.x = c.cx + 400;
-  s.player.y = c.cy;
+  s.players[0].x = c.cx + 400;
+  s.players[0].y = c.cy;
   return { s, c };
 }
 
@@ -50,8 +50,8 @@ describe('jumping creepers', () => {
     const { s, c } = setup();
     c.jump!.phase = 'rest';
     c.jump!.timer = 5;
-    s.player.x = c.x + 40;
-    s.player.y = c.y;
+    s.players[0].x = c.x + 40;
+    s.players[0].y = c.y;
     step(s, NO_INPUT, DT);
     expect(c.jump!.phase).toBe('crouch');
     run(s, CONFIG.enemies.jumper.crouchSeconds + DT);
@@ -62,10 +62,10 @@ describe('jumping creepers', () => {
     const { s, c } = setup();
     c.jump!.phase = 'rest';
     c.jump!.timer = 5;
-    s.player.x = c.x + 40;
-    s.player.y = c.y;
+    s.players[0].x = c.x + 40;
+    s.players[0].y = c.y;
     run(s, CONFIG.enemies.jumper.crouchSeconds + CONFIG.enemies.jumper.pounceSeconds + 0.1);
-    expect(s.oxygen).toBeLessThan(100 - CONFIG.oxygen.enemyHitDamage + 1);
+    expect(s.players[0].oxygen).toBeLessThan(100 - CONFIG.oxygen.enemyHitDamage + 1);
     expect(c.mode).toBe('return');
   });
 
@@ -73,13 +73,13 @@ describe('jumping creepers', () => {
     const { s, c } = setup();
     c.jump!.phase = 'rest';
     c.jump!.timer = 5;
-    s.player.x = c.x + 40;
-    s.player.y = c.y;
+    s.players[0].x = c.x + 40;
+    s.players[0].y = c.y;
     run(s, CONFIG.enemies.jumper.crouchSeconds + 2 * DT);
     expect(c.jump!.phase).toBe('pounce');
-    s.player.y += 30;
+    s.players[0].y += 30;
     run(s, CONFIG.enemies.jumper.pounceSeconds + 0.1);
-    expect(s.oxygen).toBeGreaterThan(95);
+    expect(s.players[0].oxygen).toBeGreaterThan(95);
     expect(c.jump!.phase).toBe('recover');
   });
 
@@ -87,8 +87,8 @@ describe('jumping creepers', () => {
     const { s, c } = setup();
     c.jump!.phase = 'rest';
     c.jump!.timer = 5;
-    s.player.x = c.x + CONFIG.enemies.aggroRange - 1;
-    s.player.y = c.y;
+    s.players[0].x = c.x + CONFIG.enemies.aggroRange - 1;
+    s.players[0].y = c.y;
     run(s, CONFIG.enemies.jumper.crouchSeconds + 2 * DT);
     const j = c.jump!;
     expect(Math.hypot(j.toX - j.fromX, j.toY - j.fromY)).toBeLessThanOrEqual(CONFIG.enemies.jumper.pounceRange + 0.01);

@@ -179,7 +179,7 @@ Hidden information decides the architecture. If both browsers held the full stat
 
 ### Build order
 
-1. Refactor the state to several players, with no visible change to solo play.
+1. ~~Refactor the state to several players, with no visible change to solo play.~~ Creepers go for the nearest player, meteors aim at the players in turn, toxic pools drain only who stands in them.
 2. Mirrored race generation.
 3. Race rules: hidden bunkers, bombs and defusing, supply drop, win and loss. Testable with two players on one keyboard, so balancing can start before there is a server.
 4. Room server and room codes.

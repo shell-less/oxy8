@@ -31,7 +31,13 @@ export type SoundName =
 /** 'stranded': too little energy to fly and no energy cells left on this planet. The game is over. */
 export type Status = 'playing' | 'dead' | 'stranded' | 'escaped';
 
+/**
+ * One astronaut: position, suit and everything they carry. Solo play has one player;
+ * race mode has two on the same planet. Per-player fields live here, shared world state on GameState.
+ */
 export interface Player {
+  /** Index in `GameState.players`. */
+  id: number;
   x: number;
   y: number;
   /** Knockback velocity. */
@@ -43,6 +49,18 @@ export interface Player {
   invulnerable: number;
   /** Seconds left of visible oxygen leaking from the suit. */
   leak: number;
+  oxygen: number;
+  energy: number;
+  /** Parts found on this planet and not yet installed count as carried. */
+  partsCarried: number;
+  partsInstalled: number;
+  inventory: Inventory;
+  lamp: boolean;
+  interaction: InteractionState;
+  /** Standing in a toxic pool this frame. */
+  inPool: boolean;
+  /** One byte per tile, 1 when revealed on this player's minimap. */
+  explored: Uint8Array;
 }
 
 export interface Meteor { x: number; y: number; timeLeft: number }
@@ -72,7 +90,8 @@ export interface HazardState {
   stormWarned: boolean;
   meteorTimer: number;
   meteors: Meteor[];
-  inPool: boolean;
+  /** Meteors aim at the players in turn; this counts the ones aimed so far. */
+  meteorCount: number;
   coldMultiplier: number;
 }
 
@@ -89,13 +108,8 @@ export interface InteractionState {
 export interface GameState {
   planetIndex: number;
   world: World;
-  player: Player;
-  oxygen: number;
-  energy: number;
-  /** Parts found on this planet and not yet installed count as carried. */
-  partsCarried: number;
-  partsInstalled: number;
-  inventory: Inventory;
+  /** Everyone on this planet. Solo play has exactly one; the local player is always index 0. */
+  players: Player[];
   /** Beacons placed on this planet that are still working. */
   beacons: Beacon[];
   /** Progress on all planets, and how far the engine reaches. The current planet's entry is stale until captured. */
@@ -104,11 +118,7 @@ export interface GameState {
   time: number;
   /** Debug only: speeds up the day clock. */
   timeScale: number;
-  lamp: boolean;
   hazards: HazardState;
-  interaction: InteractionState;
-  /** One byte per tile, 1 when revealed on the minimap. */
-  explored: Uint8Array;
   status: Status;
   /** Randomness for systems (meteor timing, storm length), seeded per planet. */
   rng: Rng;
@@ -133,38 +143,20 @@ export function landOn(planetIndex: number, options: LandingOptions = {}): GameS
   const state: GameState = {
     planetIndex,
     world,
-    player: {
-      x: world.ship.x + 40,
-      y: world.ship.y + 30,
-      kx: 0,
-      ky: 0,
-      facing: 1,
-      moving: false,
-      walkTime: 0,
-      invulnerable: 0,
-      leak: 0,
-    },
-    oxygen: CONFIG.player.startOxygen,
-    energy: options.energy ?? CONFIG.player.startEnergy,
-    partsCarried: 0,
-    partsInstalled: 0,
-    inventory: options.inventory ? { ...options.inventory } : emptyInventory(),
+    players: [newPlayer(0, world.ship.x + 40, world.ship.y + 30, options.energy ?? CONFIG.player.startEnergy, options.inventory)],
     beacons: [],
     campaign,
     time: (CONFIG.day.startHour / 24) * CONFIG.day.lengthSeconds,
     timeScale: 1,
-    lamp: true,
     hazards: {
       storm: 0,
       stormNext: CONFIG.hazards.storm.firstAfter,
       stormWarned: false,
       meteorTimer: 4,
       meteors: [],
-      inPool: false,
+      meteorCount: 0,
       coldMultiplier: 1,
     },
-    interaction: { target: null, progress: 0, latched: false },
-    explored: new Uint8Array(CONFIG.world.tilesX * CONFIG.world.tilesY),
     status: 'playing',
     rng: createRng(deriveSeed(planet.seed, 2)),
     events: [],
@@ -174,11 +166,41 @@ export function landOn(planetIndex: number, options: LandingOptions = {}): GameS
   return state;
 }
 
+/** A fresh astronaut standing at (x, y) with a full oxygen tank. */
+export function newPlayer(id: number, x: number, y: number, energy: number, inventory?: Inventory): Player {
+  return {
+    id,
+    x,
+    y,
+    kx: 0,
+    ky: 0,
+    facing: 1,
+    moving: false,
+    walkTime: 0,
+    invulnerable: 0,
+    leak: 0,
+    oxygen: CONFIG.player.startOxygen,
+    energy,
+    partsCarried: 0,
+    partsInstalled: 0,
+    inventory: inventory ? { ...inventory } : emptyInventory(),
+    lamp: true,
+    interaction: { target: null, progress: 0, latched: false },
+    inPool: false,
+    explored: new Uint8Array(CONFIG.world.tilesX * CONFIG.world.tilesY),
+  };
+}
+
+/** The player this browser controls, whose view the renderer and HUD show. Always index 0. */
+export function localPlayer(state: GameState): Player {
+  return state.players[0];
+}
+
 export function emit(state: GameState, event: GameEvent): void {
   state.events.push(event);
 }
 
-/** True when every part for this planet's engine upgrade is installed. */
-export function isRepaired(state: GameState): boolean {
-  return state.partsInstalled >= state.world.planet.partsNeeded;
+/** True when every part for this planet's engine upgrade is installed on this player's ship. */
+export function isRepaired(state: GameState, player: Player = localPlayer(state)): boolean {
+  return player.partsInstalled >= state.world.planet.partsNeeded;
 }

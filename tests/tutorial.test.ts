@@ -21,27 +21,27 @@ describe('tutorial tips', () => {
   it('explains bunkers when one is near', () => {
     const s = landOn(0);
     const seen = new Set(['move']);
-    s.player.x = -1000;
+    s.players[0].x = -1000;
     expect(nextTip(s, later, seen)).toBeNull();
     const b = s.world.bunkers[0];
-    s.player.x = b.x + 60;
-    s.player.y = b.y;
+    s.players[0].x = b.x + 60;
+    s.players[0].y = b.y;
     expect(nextTip(s, later, seen)?.id).toBe('bunkers');
   });
 
   it('points to the ship once a part is carried', () => {
     const s = landOn(0);
-    s.player.x = -1000;
-    s.partsCarried = 1;
+    s.players[0].x = -1000;
+    s.players[0].partsCarried = 1;
     expect(nextTip(s, later, new Set(['move']))?.id).toBe('part');
   });
 
   it('explains the lamp when it gets dark', () => {
     const s = landOn(0);
-    s.player.x = -1000;
+    s.players[0].x = -1000;
     s.time = CONFIG.day.lengthSeconds * (22 / 24);
     expect(nextTip(s, later, new Set(['move']))?.id).toBe('lamp');
-    s.lamp = false;
+    s.players[0].lamp = false;
     expect(nextTip(s, later, new Set(['move', 'lamp']))?.id).toBe('lamp-off');
   });
 

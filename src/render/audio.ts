@@ -1,4 +1,4 @@
-import type { GameEvent, GameState, SoundName } from '../game/state';
+import { localPlayer, type GameEvent, type GameState, type SoundName } from '../game/state';
 import { stormIntensity } from '../systems/hazards';
 
 const MUTE_KEY = 'oxy8.muted';
@@ -54,13 +54,14 @@ export class SoundBoard {
 
   /** Continuous sounds: storm wind, low-oxygen warning beep. */
   update(state: GameState, dt: number, running: boolean): void {
+    const me = localPlayer(state);
     if (!this.ctx || !this.wind) return;
     const storm = running ? stormIntensity(state.hazards.storm) : 0;
     this.wind.gain.setTargetAtTime(storm * 0.35, this.ctx.currentTime, 0.3);
-    if (running && state.status === 'playing' && state.oxygen < 25) {
+    if (running && state.status === 'playing' && me.oxygen < 25) {
       this.beepTimer -= dt;
       if (this.beepTimer <= 0) {
-        this.beepTimer = state.oxygen < 10 ? 0.5 : 0.9;
+        this.beepTimer = me.oxygen < 10 ? 0.5 : 0.9;
         this.tone(880, 0.07, 'square', 0.08);
       }
     } else {

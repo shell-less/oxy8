@@ -1,6 +1,6 @@
 import { PLANETS } from '../world/planets';
 import { energyCellsLeft, flightCost, scrapLeft, snapshotCampaign } from './campaign';
-import { landOn, type GameState } from './state';
+import { landOn, localPlayer, type GameState } from './state';
 
 export type DestinationStatus = 'here' | 'visited' | 'new' | 'locked' | 'unknown' | 'home';
 
@@ -26,7 +26,8 @@ export const HOME_INDEX = PLANETS.length;
 export function destinations(state: GameState): Destination[] {
   const { unlocked } = state.campaign;
   const cost = flightCost();
-  const affordable = state.energy >= cost;
+  const me = localPlayer(state);
+  const affordable = me.energy >= cost;
   const tooPoor = `Te weinig energie (${cost} nodig)`;
   const rows: Destination[] = PLANETS.map((planet, index) => {
     const base = {
@@ -37,7 +38,7 @@ export function destinations(state: GameState): Destination[] {
       return {
         ...base,
         status: 'here',
-        parts: { installed: state.partsInstalled, needed: planet.partsNeeded },
+        parts: { installed: me.partsInstalled, needed: planet.partsNeeded },
         note: 'Je bent hier',
       };
     }
@@ -72,11 +73,12 @@ export function travel(state: GameState, index: number): TravelResult {
   const target = destinations(state).find((d) => d.index === index);
   if (!target) return { ok: false, reason: 'Onbekende bestemming' };
   if (!target.canFly) return { ok: false, reason: target.note };
-  const energy = state.energy - flightCost();
+  const me = localPlayer(state);
+  const energy = me.energy - flightCost();
   const campaign = snapshotCampaign(state);
   if (index === HOME_INDEX) {
-    const next = { ...state, energy, campaign, status: 'escaped' as const, events: [] };
+    const next = { ...state, players: [{ ...me, energy }], campaign, status: 'escaped' as const, events: [] };
     return { ok: true, state: next };
   }
-  return { ok: true, state: landOn(index, { energy, campaign, inventory: state.inventory }) };
+  return { ok: true, state: landOn(index, { energy, campaign, inventory: me.inventory }) };
 }

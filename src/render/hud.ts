@@ -1,5 +1,5 @@
 import { darknessAt, formatClock, hourOf } from '../core/clock';
-import type { GameState } from '../game/state';
+import { localPlayer, type GameState } from '../game/state';
 import { describe } from '../systems/interaction';
 import { lampIsDraining } from '../systems/survival';
 
@@ -50,20 +50,21 @@ export class Hud {
   }
 
   update(state: GameState, dt: number, t: number): void {
+    const me = localPlayer(state);
     const { el } = this;
     const darkness = darknessAt(hourOf(state.time));
-    const lowO2Blink = state.oxygen < 25 && Math.sin(t * 8) > 0;
+    const lowO2Blink = me.oxygen < 25 && Math.sin(t * 8) > 0;
 
-    el.o2Bar.style.width = `${state.oxygen}%`;
+    el.o2Bar.style.width = `${me.oxygen}%`;
     el.o2Bar.style.background = lowO2Blink ? 'var(--danger)' : 'var(--o2)';
-    this.text(el.o2Val, String(Math.round(state.oxygen)));
-    el.enBar.style.width = `${state.energy}%`;
-    this.text(el.enVal, String(Math.round(state.energy)));
+    this.text(el.o2Val, String(Math.round(me.oxygen)));
+    el.enBar.style.width = `${me.energy}%`;
+    this.text(el.enVal, String(Math.round(me.energy)));
 
-    const lampText = `${state.lamp ? 'Lamp aan' : 'Lamp uit'}${state.lamp && lampIsDraining(darkness) ? ' · verbruikt' : ''}${this.touch ? '' : ' · F'}`;
-    if (this.text(el.lamp, lampText)) el.lamp.style.color = state.lamp ? '#ffe9a0' : '';
+    const lampText = `${me.lamp ? 'Lamp aan' : 'Lamp uit'}${me.lamp && lampIsDraining(darkness) ? ' · verbruikt' : ''}${this.touch ? '' : ' · F'}`;
+    if (this.text(el.lamp, lampText)) el.lamp.style.color = me.lamp ? '#ffe9a0' : '';
 
-    const inv = state.inventory;
+    const inv = me.inventory;
     const items: string[] = [];
     if (inv.scrap > 0) items.push(`Schroot ${inv.scrap}`);
     if (inv.bottles > 0) items.push(`Fles ${inv.bottles}${this.touch ? '' : ' (Q)'}`);
@@ -80,14 +81,14 @@ export class Hud {
     this.text(el.planet, `${planet.name} · ${planet.theme.colourName}`);
     this.text(el.clock, formatClock(state.time));
 
-    const slotKey = `${planet.partsNeeded}/${state.partsCarried}/${state.partsInstalled}`;
+    const slotKey = `${planet.partsNeeded}/${me.partsCarried}/${me.partsInstalled}`;
     if (this.last.get('slots') !== slotKey) {
       this.last.set('slots', slotKey);
       el.slots.innerHTML = '';
       for (let i = 0; i < planet.partsNeeded; i++) {
         const s = document.createElement('span');
         s.className = 'slot';
-        s.style.background = i < state.partsInstalled ? '#7dff8a' : i < state.partsCarried ? '#ff9a3c' : '#2a1a20';
+        s.style.background = i < me.partsInstalled ? '#7dff8a' : i < me.partsCarried ? '#ff9a3c' : '#2a1a20';
         el.slots.appendChild(s);
       }
     }
@@ -100,7 +101,7 @@ export class Hud {
       el.hazard.style.color = active ? 'var(--warn)' : '';
     }
 
-    const info = state.status === 'playing' ? describe(state, state.interaction.target) : null;
+    const info = state.status === 'playing' ? describe(state, me, me.interaction.target) : null;
     const hint = info ? (this.touch ? info.text.replace('[E] ', '') : info.text) : '';
     if (this.text(el.hint, hint)) el.hint.style.opacity = info ? '1' : '0';
 
@@ -129,6 +130,6 @@ function hazardStatus(state: GameState): [string, boolean] {
     case 'meteor':
       return ['Meteorenregen', h.meteors.length > 0];
     case 'toxic':
-      return h.inPool ? ['Gifgas: filters overbelast', true] : ['Vermijd de gifpoelen', false];
+      return localPlayer(state).inPool ? ['Gifgas: filters overbelast', true] : ['Vermijd de gifpoelen', false];
   }
 }
