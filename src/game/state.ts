@@ -73,6 +73,8 @@ export interface RaceState {
   nextBombId: number;
   /** Ids of players who stepped on a bomb, for the result screen. */
   blownUp: number[];
+  /** True for a network race (the browser's mirror), false for two players on one keyboard. */
+  online: boolean;
 }
 
 /**
@@ -228,7 +230,7 @@ export function startRace(matchSeed: number): GameState {
     planetIndex: PLANETS.findIndex((p) => p.theme === world.planet.theme),
     players: [newPlayer(0, world, spawn.x, spawn.y, energy), newPlayer(1, world, other.x, other.y, energy)],
     campaign: newCampaign(),
-    race: { elapsed: 0, result: null, drop: newDrop(world), bombs: [], nextBombId: 0, blownUp: [] },
+    race: { elapsed: 0, result: null, drop: newDrop(world), bombs: [], nextBombId: 0, blownUp: [], online: false },
   };
 }
 

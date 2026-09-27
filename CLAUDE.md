@@ -47,7 +47,10 @@ src/
                      Pure functions on GameState.
   net/               network races, shared by browser and server: protocol (messages), view (what one
                      player may see), apply (snapshots onto the browser's mirror state), match (one room,
-                     host-independent), codes (room codes). No sockets or Cloudflare code here.
+                     host-independent), codes (room codes), sender (when the browser sends input) and
+                     smooth (gliding between snapshots). No sockets or Cloudflare code here.
+  online/            connection: the browser's WebSocket to a race room (make, join, reconnect, rematch).
+                     VITE_RACE_SERVER overrides the server address, e.g. http://127.0.0.1:8787 for wrangler dev.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
                      ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench), tips, keyboard and touch (input sources, DOM).
 tests/               Vitest tests for world generation and systems.
