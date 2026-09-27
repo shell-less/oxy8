@@ -12,25 +12,43 @@ import { applyProgress, newCampaign, type Campaign } from './campaign';
  * main.ts and the renderer handle them. This keeps game logic free of UI code, and easy to test.
  */
 export type GameEvent =
-  | { type: 'toast'; text: string }
+  | { type: 'toast'; text: string; player?: number }
   | { type: 'burst'; x: number; y: number; color: string; count: number }
-  | { type: 'shake'; amount: number }
-  | { type: 'hurt' }
+  | { type: 'shake'; amount: number; player?: number }
+  | { type: 'hurt'; player?: number }
   | { type: 'crater'; x: number; y: number }
   /** Something worth saving happened (loot, install). */
   | { type: 'progress' }
-  /** The player asked the ship for the star map. */
-  | { type: 'starmap' }
+  /** The player asked the ship for the star map (in race mode: the workbench). */
+  | { type: 'starmap'; player?: number }
   /** A sound effect. The audio layer decides what it sounds like. */
-  | { type: 'sound'; name: SoundName };
+  | { type: 'sound'; name: SoundName; player?: number };
+
+/** Events that only concern one player carry their id; the screen shows them only for that player. */
+export type PlayerEvent = Extract<GameEvent, { player?: number }>;
 
 export type SoundName =
   | 'pickup' | 'part' | 'supply' | 'install' | 'repaired' | 'craft'
   | 'hurt' | 'bottle' | 'beacon' | 'deny' | 'lamp'
   | 'pounce' | 'land' | 'slide' | 'storm-warning';
 
-/** 'stranded': too little energy to fly and no energy cells left on this planet. The game is over. */
-export type Status = 'playing' | 'dead' | 'stranded' | 'escaped';
+/**
+ * 'stranded': too little energy to fly and no energy cells left on this planet. The game is over.
+ * 'over': a race has ended; `race.result` says how.
+ */
+export type Status = 'playing' | 'dead' | 'stranded' | 'escaped' | 'over';
+
+/** How a race ended. `winner` is a player id, or null for a draw. */
+export interface RaceResult {
+  winner: number | null;
+  reason: 'launch' | 'death' | 'time';
+}
+
+export interface RaceState {
+  /** Seconds since the race started. */
+  elapsed: number;
+  result: RaceResult | null;
+}
 
 /**
  * One astronaut: position, suit and everything they carry. Solo play has one player;
@@ -114,8 +132,12 @@ export interface GameState {
   /** Solo only: index in PLANETS. Race planets are not in PLANETS; this is then the index of their planet type. */
   planetIndex: number;
   world: World;
-  /** Everyone on this planet. Solo play has exactly one; the local player is always index 0. */
+  /** Everyone on this planet. Solo play has exactly one. */
   players: Player[];
+  /** Index of the player whose view the screen shows. Always 0 in solo; Tab switches it in a local race. */
+  viewer: number;
+  /** Race mode only. */
+  race: RaceState | null;
   /** Beacons placed on this planet that are still working. */
   beacons: Beacon[];
   /** Progress on all planets, and how far the engine reaches. The current planet's entry is stale until captured. */
@@ -173,13 +195,16 @@ export function startRace(matchSeed: number): GameState {
     planetIndex: PLANETS.findIndex((p) => p.theme === world.planet.theme),
     players: [newPlayer(0, world, spawn.x, spawn.y, energy), newPlayer(1, world, other.x, other.y, energy)],
     campaign: newCampaign(),
+    race: { elapsed: 0, result: null },
   };
 }
 
 /** The parts of a fresh GameState that do not depend on the mode. */
-function sharedState(world: World, seed: number): Omit<GameState, 'mode' | 'planetIndex' | 'players' | 'campaign'> {
+function sharedState(world: World, seed: number): Omit<GameState, 'mode' | 'planetIndex' | 'players' | 'campaign' | 'race'> & { race: null } {
   return {
     world,
+    viewer: 0,
+    race: null,
     beacons: [],
     time: (CONFIG.day.startHour / 24) * CONFIG.day.lengthSeconds,
     timeScale: 1,
@@ -228,13 +253,23 @@ export function shipOf(state: GameState, player: Player): Point {
   return state.world.ships[player.id] ?? state.world.ship;
 }
 
-/** The player this browser controls, whose view the renderer and HUD show. Always index 0. */
+/** The player whose view the renderer, HUD, tips and minimap show. Index 0 in solo play. */
 export function localPlayer(state: GameState): Player {
-  return state.players[0];
+  return state.players[state.viewer] ?? state.players[0];
 }
 
 export function emit(state: GameState, event: GameEvent): void {
   state.events.push(event);
+}
+
+/** An event for one player only: their toasts, their hits, their sounds. */
+export function emitTo(state: GameState, player: Player, event: PlayerEvent): void {
+  state.events.push({ ...event, player: player.id });
+}
+
+/** True when this event should reach the screen of the given viewer. */
+export function isFor(event: GameEvent, viewer: number): boolean {
+  return !('player' in event) || event.player === undefined || event.player === viewer;
 }
 
 /** True when every part for this planet's engine upgrade is installed on this player's ship. */

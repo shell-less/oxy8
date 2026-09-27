@@ -1,3 +1,4 @@
+import { CONFIG } from '../config';
 import { darknessAt, formatClock, hourOf } from '../core/clock';
 import { localPlayer, type GameState } from '../game/state';
 import { describe } from '../systems/interaction';
@@ -78,8 +79,17 @@ export class Hud {
     }
 
     const planet = state.world.planet;
-    this.text(el.planet, `${planet.name} · ${planet.theme.colourName}`);
-    this.text(el.clock, formatClock(state.time));
+    if (state.race) {
+      // In a race the header names whose screen this is, and the clock counts down to the time limit.
+      const left = Math.max(0, CONFIG.race.timeLimit - state.race.elapsed);
+      const mm = Math.floor(left / 60);
+      const ss = String(Math.floor(left % 60)).padStart(2, '0');
+      this.text(el.planet, `Speler ${state.viewer + 1} · ${planet.name}`);
+      this.text(el.clock, `${formatClock(state.time)} · nog ${mm}:${ss}`);
+    } else {
+      this.text(el.planet, `${planet.name} · ${planet.theme.colourName}`);
+      this.text(el.clock, formatClock(state.time));
+    }
 
     const slotKey = `${planet.partsNeeded}/${me.partsCarried}/${me.partsInstalled}`;
     if (this.last.get('slots') !== slotKey) {

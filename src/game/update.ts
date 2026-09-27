@@ -8,7 +8,7 @@ import { ageBeacons, pickUpScrap, updateItems } from '../systems/items';
 import { movePlayer, revealAround } from '../systems/movement';
 import { updateLamp, updateOxygen } from '../systems/survival';
 import { isStranded } from './campaign';
-import type { GameState, Player } from './state';
+import type { GameState, Player, RaceResult, RaceState } from './state';
 
 /**
  * Advances the game by dt seconds. The order of the systems matters: hazards set the rules for this frame.
@@ -33,7 +33,7 @@ export function step(state: GameState, input: InputState | readonly InputState[]
     pickUpScrap(state, player);
     updateItems(state, player, own);
     const extra = player.inPool ? CONFIG.hazards.toxic.extraDrainPerSecond : 0;
-    updateOxygen(state, player, dt, mods.oxygenMultiplier, extra);
+    updateOxygen(player, dt, mods.oxygenMultiplier, extra);
   }
   ageBeacons(state, dt);
 
@@ -43,16 +43,46 @@ export function step(state: GameState, input: InputState | readonly InputState[]
   };
   updateCreepers(state, dt, aggroFor);
 
-  for (const player of state.players) {
-    if (player.oxygen <= 0) {
-      player.oxygen = 0;
-      state.status = 'dead';
-    }
+  if (state.race) {
+    updateRace(state, state.race, dt);
+  } else if (state.players.some((p) => p.oxygen <= 0)) {
+    state.status = 'dead';
+  } else if (isStranded(state)) {
+    state.status = 'stranded';
   }
-  if (state.mode === 'solo' && state.status === 'playing' && isStranded(state)) state.status = 'stranded';
 
   for (const player of state.players) {
     const seesFar = player.lamp || darkness < 0.3;
     revealAround(state, player, seesFar ? CONFIG.player.revealRadius : CONFIG.player.revealRadiusDark);
   }
+}
+
+/**
+ * Race mode: every death loses, both at once is a draw. A launch (in the interaction system) wins.
+ * At the time limit the most installed parts wins, then the most energy, otherwise it is a draw.
+ */
+function updateRace(state: GameState, race: RaceState, dt: number): void {
+  race.elapsed += dt;
+  if (state.status !== 'playing') return;
+  let result: RaceResult | null = null;
+  const alive = state.players.filter((p) => p.oxygen > 0);
+  if (alive.length < state.players.length) {
+    result = { winner: alive.length === 1 ? alive[0].id : null, reason: 'death' };
+  } else if (race.elapsed >= CONFIG.race.timeLimit) {
+    result = { winner: leaderAtTime(state.players), reason: 'time' };
+  }
+  if (result) {
+    race.result = result;
+    state.status = 'over';
+  }
+}
+
+/** The single best player by installed parts, then whole energy points; null when they are level. */
+function leaderAtTime(players: readonly Player[]): number | null {
+  const score = (p: Player) => [p.partsInstalled, Math.floor(p.energy)];
+  const ranked = [...players].sort((a, b) => score(b)[0] - score(a)[0] || score(b)[1] - score(a)[1]);
+  const [first, second] = ranked;
+  if (!second) return first.id;
+  const [a, b] = [score(first), score(second)];
+  return a[0] === b[0] && a[1] === b[1] ? null : first.id;
 }

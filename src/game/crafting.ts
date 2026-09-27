@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { emit, localPlayer, type GameState, type Player } from './state';
+import { emit, emitTo, localPlayer, type GameState, type Player } from './state';
 
 export type RecipeId = 'bottle' | 'armour' | 'beacon';
 
@@ -60,8 +60,8 @@ export function craft(state: GameState, id: RecipeId, player: Player = localPlay
   if (id === 'bottle') inv.bottles++;
   else if (id === 'beacon') inv.beacons++;
   else inv.armour = true;
-  emit(state, { type: 'toast', text: `${recipe.name} gemaakt` });
-  emit(state, { type: 'sound', name: 'craft' });
+  emitTo(state, player, { type: 'toast', text: `${recipe.name} gemaakt` });
+  emitTo(state, player, { type: 'sound', name: 'craft' });
   emit(state, { type: 'progress' });
   return check;
 }

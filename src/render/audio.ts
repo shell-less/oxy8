@@ -1,4 +1,4 @@
-import { localPlayer, type GameEvent, type GameState, type SoundName } from '../game/state';
+import { isFor, localPlayer, type GameEvent, type GameState, type SoundName } from '../game/state';
 import { stormIntensity } from '../systems/hazards';
 
 const MUTE_KEY = 'oxy8.muted';
@@ -45,8 +45,10 @@ export class SoundBoard {
   }
 
   /** Plays sounds for this frame's events. Call before the renderer drains them. */
-  handle(events: readonly GameEvent[]): void {
+  /** Plays the sounds in this frame's events; sounds for another player are left out. */
+  handle(events: readonly GameEvent[], viewer = 0): void {
     for (const e of events) {
+      if (!isFor(e, viewer)) continue;
       if (e.type === 'sound') this.play(e.name);
       else if (e.type === 'crater') this.play('impact');
     }

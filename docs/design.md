@@ -166,6 +166,16 @@ The ships stand about 780 px from the centre, which is roughly 15 seconds of wal
 
 Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px; a faint beep within ~60 px that speeds up as you get closer; at night the helmet lamp makes a bomb glint. The owner sees their own bombs faintly. The strongest play: a bomb next to a bunker you already emptied, since the opponent cannot see that it is empty.
 
+### Playing locally
+
+Until the server exists, a race is played by two players on one keyboard. The title screen offers "Race (lokaal)" in development, with `?debug`, or with `?race` in the address; the live game does not show it otherwise.
+
+- **Player 1:** WASD, E action, F lamp, Q bottle, R beacon.
+- **Player 2:** arrows, Enter action, right Shift lamp, / bottle, . beacon.
+- **Tab** switches the screen between the players: camera, HUD, minimap, tips and toasts follow whoever is shown. Both players can always move. Opening the workbench switches the screen to the player who opened it.
+
+Player 2's suit has a lime stripe instead of orange. The HUD names whose screen it is and counts down to the time limit. At the ship, a repaired engine offers "Opstijgen" (costs the flight energy) instead of the star map; the ship menu shows only the workbench. Race mode never writes the solo save.
+
 ### Technology
 
 Hidden information decides the architecture. If both browsers held the full state, the developer tools would show every bomb and every empty bunker. So the server is authoritative and sends each player only what they may see.
@@ -187,7 +197,10 @@ Hidden information decides the architecture. If both browsers held the full stat
 
 1. ~~Refactor the state to several players, with no visible change to solo play.~~ Creepers go for the nearest player, meteors aim at the players in turn, toxic pools drain only who stands in them.
 2. ~~Mirrored race generation.~~ A debug button in `npm run dev` ("Raceplaneet") lands you on a random race planet; the second player stands still at the other ship.
-3. Race rules: hidden bunkers, bombs and defusing, supply drop, win and loss. Testable with two players on one keyboard, so balancing can start before there is a server.
+3. Race rules, testable with two players on one keyboard, so balancing can start before there is a server. Split in three:
+   - ~~3a. Local race: two players on one keyboard, Tab to switch, launch to win, every death loses, time limit, result screen.~~
+   - 3b. Hidden empty bunkers and the supply drop.
+   - 3c. Bombs and defusing.
 4. Room server and room codes.
 5. Rematch, mobile testing, balance.
 

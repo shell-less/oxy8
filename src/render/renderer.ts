@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
-import { localPlayer, shipOf, type GameState } from '../game/state';
+import { isFor, localPlayer, shipOf, type GameState } from '../game/state';
 import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
@@ -37,6 +37,8 @@ export class Renderer {
   consumeEvents(state: GameState): string[] {
     const toasts: string[] = [];
     for (const e of state.events) {
+      // Another player's toasts, hits and shakes are theirs; world effects like bursts are for everyone.
+      if (!isFor(e, state.viewer)) continue;
       switch (e.type) {
         case 'toast': toasts.push(e.text); break;
         case 'burst': this.particles.burst(e.x, e.y, e.color, e.count); break;

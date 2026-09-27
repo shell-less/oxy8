@@ -40,43 +40,80 @@ export function stickVector(dx: number, dy: number, radius: number, deadZone: nu
   return { x: (dx / d) * strength, y: (dy / d) * strength };
 }
 
-/** Keys that fire once per press, mapped to the InputState flag they set. */
-const ONE_SHOT = { KeyF: 'toggleLamp', KeyQ: 'useBottle', KeyR: 'placeBeacon' } as const;
-type OneShot = (typeof ONE_SHOT)[keyof typeof ONE_SHOT];
+/** Keys for one player. Movement keys are held; the others fire once per press, except `interact`. */
+interface Binding {
+  up: string[];
+  down: string[];
+  left: string[];
+  right: string[];
+  interact: string;
+  toggleLamp: string;
+  useBottle: string;
+  placeBeacon: string;
+}
 
-const GAME_KEYS = new Set([
-  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyF', 'KeyQ', 'KeyR',
-]);
+/** Solo: WASD or the arrows. */
+const SOLO: Binding = {
+  up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
+  interact: 'KeyE', toggleLamp: 'KeyF', useBottle: 'KeyQ', placeBeacon: 'KeyR',
+};
+
+/** Two players on one keyboard: player 1 on the left hand, player 2 on the arrows and the keys around them. */
+export const SPLIT: readonly [Binding, Binding] = [
+  { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], interact: 'KeyE', toggleLamp: 'KeyF', useBottle: 'KeyQ', placeBeacon: 'KeyR' },
+  {
+    up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'],
+    interact: 'Enter', toggleLamp: 'ShiftRight', useBottle: 'Slash', placeBeacon: 'Period',
+  },
+];
+
+const ONE_SHOT = ['toggleLamp', 'useBottle', 'placeBeacon'] as const;
+
+const GAME_KEYS = new Set([SOLO, ...SPLIT].flatMap((b) => [
+  ...b.up, ...b.down, ...b.left, ...b.right, b.interact, b.toggleLamp, b.useBottle, b.placeBeacon,
+]));
 
 export class Keyboard {
   private held = new Set<string>();
-  private pressed = new Set<OneShot>();
+  /** Codes pressed since the last poll, so a quick tap between two frames still counts. */
+  private pressed = new Set<string>();
 
   constructor(target: Window = window) {
     target.addEventListener('keydown', (e) => {
       if (!GAME_KEYS.has(e.code)) return;
       e.preventDefault();
-      const shot = ONE_SHOT[e.code as keyof typeof ONE_SHOT];
-      if (shot && !e.repeat) this.pressed.add(shot);
+      if (!e.repeat) this.pressed.add(e.code);
       this.held.add(e.code);
     });
     target.addEventListener('keyup', (e) => this.held.delete(e.code));
     target.addEventListener('blur', () => this.held.clear());
   }
 
-  /** Read and reset one-shot presses. Call once per frame. */
+  /** Solo input. Reads and resets one-shot presses; call once per frame. */
   poll(): InputState {
-    const h = (code: string) => this.held.has(code);
-    const state: InputState = {
-      moveX: (h('ArrowRight') || h('KeyD') ? 1 : 0) - (h('ArrowLeft') || h('KeyA') ? 1 : 0),
-      moveY: (h('ArrowDown') || h('KeyS') ? 1 : 0) - (h('ArrowUp') || h('KeyW') ? 1 : 0),
-      interact: h('KeyE'),
-      toggleLamp: this.pressed.has('toggleLamp'),
-      useBottle: this.pressed.has('useBottle'),
-      placeBeacon: this.pressed.has('placeBeacon'),
-    };
+    const input = this.read(SOLO);
     this.pressed.clear();
-    return state;
+    return input;
+  }
+
+  /** Two players on one keyboard, one InputState each. Reads and resets one-shot presses. */
+  pollSplit(): [InputState, InputState] {
+    const inputs: [InputState, InputState] = [this.read(SPLIT[0]), this.read(SPLIT[1])];
+    this.pressed.clear();
+    return inputs;
+  }
+
+  private read(b: Binding): InputState {
+    const held = (codes: string[]) => codes.some((c) => this.held.has(c));
+    const input: InputState = {
+      moveX: (held(b.right) ? 1 : 0) - (held(b.left) ? 1 : 0),
+      moveY: (held(b.down) ? 1 : 0) - (held(b.up) ? 1 : 0),
+      interact: this.held.has(b.interact),
+      toggleLamp: false,
+      useBottle: false,
+      placeBeacon: false,
+    };
+    for (const key of ONE_SHOT) input[key] = this.pressed.has(b[key]);
+    return input;
   }
 }
