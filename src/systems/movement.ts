@@ -4,7 +4,8 @@ import type { GameState } from '../game/state';
 /** Moves the player with input and knockback, then pushes them out of solid objects. */
 export function movePlayer(state: GameState, moveX: number, moveY: number, speed: number, dt: number): void {
   const p = state.player;
-  const len = Math.hypot(moveX, moveY) || 1;
+  // Keys give length 1 or sqrt(2) and are normalised; a touch stick below 1 walks slower.
+  const len = Math.max(1, Math.hypot(moveX, moveY));
   p.moving = moveX !== 0 || moveY !== 0;
   if (moveX !== 0) p.facing = moveX > 0 ? 1 : -1;
 

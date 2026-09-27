@@ -5,7 +5,7 @@ import { destinations, HOME_INDEX, type Destination } from '../game/travel';
 import { PLANETS } from '../world/planets';
 
 /**
- * The ship menu: the workbench on top, the star map below. Emits choices; the caller
+ * The ship menu: the workbench on the left, the star map on the right. Emits choices; the caller
  * performs the crafting or the travel and reopens or hides the menu.
  */
 export class StarMap {
@@ -16,12 +16,14 @@ export class StarMap {
   private bench = document.getElementById('workbench-list') as HTMLElement;
   private benchSub = document.getElementById('workbench-sub') as HTMLElement;
   private rows: Destination[] = [];
+  private closeBtn = document.getElementById('starmap-close') as HTMLButtonElement;
 
   constructor(
     private onPick: (index: number, row: Destination) => void,
     private onClose: () => void,
     private onCraft: (id: RecipeId) => void,
   ) {
+    this.closeBtn.addEventListener('click', () => this.close());
     window.addEventListener('keydown', (e) => {
       if (!this.isOpen) return;
       if (e.code === 'Escape') {
@@ -47,7 +49,8 @@ export class StarMap {
     this.bench.replaceChildren(...RECIPES.map((r) => this.renderRecipe(state, r)));
     this.rows = destinations(state);
     this.sub.textContent = `Energie: ${Math.round(state.energy)} · een vlucht kost ${CONFIG.energy.flightCost}`;
-    this.foot.textContent = 'Klik of kies met 1-9 · Esc: terug naar de planeet';
+    const touch = document.documentElement.classList.contains('touch');
+    this.foot.textContent = touch ? 'Tik op een planeet om te vliegen' : 'Klik of kies met 1-9 · Esc: terug naar de planeet';
     this.list.replaceChildren(...this.rows.map((row, i) => this.renderRow(row, i + 1)));
     this.root.hidden = false;
     // After crafting, keep focus on the same recipe; otherwise start on the first flyable planet.
@@ -75,7 +78,10 @@ export class StarMap {
     cost.textContent = `${recipe.scrap} schroot`;
     const note = document.createElement('span');
     note.className = 'note';
-    note.textContent = `${recipe.effect} · ${check.note}`;
+    // Touch screens have buttons instead of the Q and R keys.
+    const touch = document.documentElement.classList.contains('touch');
+    const effect = touch ? recipe.effect.replace(/^[A-Z]: /, '') : recipe.effect;
+    note.textContent = `${effect} · ${check.note}`;
     btn.append(dot, name, cost, note);
     btn.addEventListener('click', () => this.onCraft(recipe.id));
     return btn;

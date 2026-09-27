@@ -191,7 +191,7 @@ html, body { margin: 0; height: 100%; }
 /* Workbench and star map side by side, so every planet fits without scrolling. */
 .ship-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; align-items: start; }
 .ship-column { display: flex; flex-direction: column; gap: 0.5em; min-width: 0; }
-@media (max-width: 760px) { .ship-columns { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .ship-columns { grid-template-columns: 1fr; } }
 #inventory { color: #d8e0e8; }
 #inventory:empty { display: none; }
 
@@ -244,3 +244,172 @@ html, body { margin: 0; height: 100%; }
 #game.splash #overlay { cursor: pointer; }
 #game.splash #overlay-sub { animation: splash-pulse 1.6s ease-in-out infinite; }
 @keyframes splash-pulse { 50% { opacity: 0.35; } }
+
+/* ---------- Touch screens ---------- */
+
+#starmap-head { display: flex; align-items: center; justify-content: space-between; gap: 1em; }
+#starmap-close { padding: 0.3em 0.9em; }
+.keys-touch { display: none; }
+#rotate { display: none; }
+.touch-layer[hidden], .touch-small[hidden] { display: none; }
+
+html.touch, html.touch body { overscroll-behavior: none; }
+html.touch #app { padding: 0; gap: 0; min-height: 100dvh; }
+html.touch #game {
+  width: min(100vw, 100dvh * 16 / 9);
+  border-radius: 0;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html.touch #keys { display: none; }
+html.touch .keys-desktop { display: none; }
+html.touch .keys-touch { display: inline; }
+html.touch #hint { bottom: 8px; }
+/* Phones are short: a tighter ship menu so the whole star map fits. */
+html.touch #starmap { max-height: 94%; padding: 0.7em 1em; gap: 0.3em; }
+html.touch .ship-column { gap: 0.3em; }
+html.touch .dest { padding-top: 0.25em; padding-bottom: 0.25em; }
+/* HUD panels only show information; touches go to the controls underneath. */
+html.touch .panel { pointer-events: none; }
+/* Room for the pause button in the top right corner; the minimap moves up out of the thumb's way. */
+html.touch #mission { right: calc(8px + 2.8em + 6px); }
+html.touch #minimap { bottom: auto; top: calc(14px + 6.9em); width: 15%; }
+
+.touch-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  touch-action: none;
+}
+.touch-layer button {
+  pointer-events: auto;
+  font: inherit;
+  color: var(--ink);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The left half: wherever the thumb lands, the stick appears. */
+.touch-zone {
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 0;
+  width: 50%;
+  pointer-events: auto;
+}
+.stick-base {
+  --radius: 44px;
+  position: absolute;
+  width: calc(var(--radius) * 2);
+  height: calc(var(--radius) * 2);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(160, 220, 255, 0.35);
+  background: rgba(8, 6, 20, 0.35);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.stick-base.visible { opacity: 1; }
+.stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44%;
+  height: 44%;
+  border-radius: 50%;
+  background: rgba(230, 246, 255, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Right-hand buttons. Sizes follow the game's font size, which follows the screen. */
+.touch-action {
+  --progress: 0;
+  position: absolute;
+  right: 5%;
+  bottom: 9%;
+  width: 6.2em;
+  height: 6.2em;
+  border-radius: 50%;
+  border: 2px solid var(--panel-line);
+  background:
+    radial-gradient(circle, rgba(8, 6, 20, 0.85) 60%, transparent 61%),
+    conic-gradient(#7dff8a calc(var(--progress) * 360deg), rgba(8, 6, 20, 0.6) 0);
+  opacity: 0.55;
+}
+.touch-action.available { opacity: 1; border-color: #ffe9a0; }
+.touch-action.available .label { color: #ffe9a0; }
+.touch-action.held { transform: scale(0.94); }
+.touch-action .label { font-size: 1.05em; }
+
+.touch-small {
+  position: absolute;
+  width: 3.6em;
+  height: 3.6em;
+  border-radius: 50%;
+  border: 1px solid var(--panel-line);
+  background: rgba(8, 6, 20, 0.7);
+  font-size: 0.85em;
+}
+/* An arc around the action button: lamp to the left, bottle and beacon above. */
+.touch-lamp { right: calc(5% + 8.2em); bottom: 9%; }
+.touch-bottle { right: calc(5% + 7.4em); bottom: calc(9% + 5.4em); }
+.touch-beacon { right: calc(5% + 1.6em); bottom: calc(9% + 8em); }
+.touch-lamp.on { color: #ffe9a0; border-color: rgba(255, 233, 160, 0.6); }
+.touch-small[data-count]:not([data-count='1'])::after {
+  content: attr(data-count);
+  position: absolute;
+  top: -0.3em;
+  right: -0.3em;
+  min-width: 1.4em;
+  padding: 0 0.3em;
+  border-radius: 0.7em;
+  background: #ffe9a0;
+  color: #07060f;
+  font-size: 0.8em;
+}
+.touch-small.flash { background: rgba(255, 233, 160, 0.35); }
+
+.touch-pause {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 2.8em;
+  height: 2.8em;
+  border-radius: 4px;
+  border: 1px solid var(--panel-line);
+  background: var(--panel);
+}
+/* Two pause bars. */
+.touch-pause::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.9em;
+  height: 1em;
+  transform: translate(-50%, -50%);
+  border-left: 0.3em solid var(--ink);
+  border-right: 0.3em solid var(--ink);
+}
+
+/* Upright phone: ask to turn it. */
+@media (orientation: portrait) {
+  html.touch #rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2em;
+    text-align: center;
+    font-size: 1.2em;
+    background: var(--bg);
+  }
+}
+/* Narrow rows on phones: leftovers go on their own line under the planet name. */
+html.touch .dest .loot { grid-row: auto; grid-column: 2; text-align: left; font-size: 0.85em; }

@@ -13,6 +13,8 @@ export interface Tip {
   id: string;
   /** Dutch, one or two short sentences. */
   text: string;
+  /** The same tip for touch screens, when `text` names keys. */
+  touchText?: string;
   when: (state: GameState, ctx: TipContext) => boolean;
 }
 
@@ -29,11 +31,13 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'move',
     text: 'Loop met WASD of de pijltjes. Je zuurstof (O2) loopt langzaam leeg.',
+    touchText: 'Loop door je duim over de linkerhelft te slepen. Je zuurstof (O2) loopt langzaam leeg.',
     when: (_, ctx) => ctx.secondsOnPlanet > CONFIG.tips.firstDelay,
   },
   {
     id: 'bunkers',
     text: 'Oranje bunkers bevatten scheepsonderdelen, blauwe vullen je zuurstof bij. Houd E vast om te openen.',
+    touchText: 'Oranje bunkers bevatten scheepsonderdelen, blauwe vullen je zuurstof bij. Houd de actieknop vast om te openen.',
     when: (s) => s.world.bunkers.some((b) => near(s, b.x, b.y, CONFIG.tips.nearBunker)),
   },
   {
@@ -59,6 +63,7 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'part',
     text: 'Breng het onderdeel naar je schip en houd daar E vast. Inbouwen kost 20 energie.',
+    touchText: 'Breng het onderdeel naar je schip en houd daar de actieknop vast. Inbouwen kost 20 energie.',
     when: (s) => s.partsCarried > s.partsInstalled,
   },
   {
@@ -69,16 +74,19 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'craft',
     text: 'Je hebt genoeg schroot om iets te maken. Houd E vast bij je schip en kies op de werkbank.',
+    touchText: 'Je hebt genoeg schroot om iets te maken. Houd de actieknop vast bij je schip en kies op de werkbank.',
     when: (s) => anyCraftable(s),
   },
   {
     id: 'bottle',
     text: 'Weinig zuurstof? Druk op Q om je zuurstoffles te gebruiken.',
+    touchText: 'Weinig zuurstof? Tik op de fles-knop om je zuurstoffles te gebruiken.',
     when: (s) => s.inventory.bottles > 0 && s.oxygen < CONFIG.tips.lowOxygen,
   },
   {
     id: 'beacon',
     text: 'Druk op R om een lokbaken neer te zetten. Kruipers in de buurt gaan er even op af in plaats van op jou.',
+    touchText: 'Tik op de baken-knop om een lokbaken neer te zetten. Kruipers in de buurt gaan er even op af in plaats van op jou.',
     when: (s) => s.inventory.beacons > 0 && s.world.creepers.some((c) => near(s, c.x, c.y, CONFIG.tips.nearCreeper * 1.5)),
   },
   {
@@ -89,6 +97,7 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'lamp',
     text: 'Het wordt donker. Je helmlamp (F) kost \'s nachts energie.',
+    touchText: 'Het wordt donker. Je helmlamp kost \'s nachts energie. De lamp-knop zet hem aan en uit.',
     when: (s) => darkness(s) > 0.2,
   },
   {
@@ -99,6 +108,7 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'starmap',
     text: 'Je motor is klaar. Houd E vast bij je schip en kies op de sterrenkaart je volgende planeet.',
+    touchText: 'Je motor is klaar. Houd de actieknop vast bij je schip en kies op de sterrenkaart je volgende planeet.',
     when: (s) => isRepaired(s),
   },
   {

@@ -39,12 +39,16 @@
           <span data-item="beacon"><kbd>R</kbd> baken</span>
           <span><kbd>M</kbd> geluid</span>
           <span><kbd>N</kbd> muziek</span>
+          <span><kbd>P</kbd> pauze</span>
           <span><kbd>H</kbd> verberg</span>
         </div>
         <canvas class="panel" id="minimap" aria-label="Minikaart"></canvas>
 
         <section id="starmap" hidden aria-label="Schip">
-          <div id="starmap-title">Schip</div>
+          <div id="starmap-head">
+            <div id="starmap-title">Schip</div>
+            <button id="starmap-close" class="btn" type="button">Terug</button>
+          </div>
           <div class="ship-columns">
             <div class="ship-column">
               <div class="section-title">Werkbank</div>
@@ -65,8 +69,12 @@
           <div id="overlay-hazard"></div>
           <div id="overlay-sub"></div>
           <div id="overlay-actions"></div>
-          <div id="overlay-keys">WASD of pijltjes: lopen · E vasthouden: openen, inbouwen, schip · F: helmlamp · Q: zuurstoffles · R: lokbaken · M: geluid · N: muziek · H: toetsen</div>
+          <div id="overlay-keys">
+            <span class="keys-desktop">WASD of pijltjes: lopen · E vasthouden: openen, inbouwen, schip · F: helmlamp · Q: zuurstoffles · R: lokbaken · M: geluid · N: muziek · P: pauze · H: toetsen</span>
+            <span class="keys-touch">Linkerduim slepen: lopen · Actieknop vasthouden: openen, inbouwen, schip · Kleine knoppen: lamp, fles, baken</span>
+          </div>
         </div>
+        <div id="rotate">Draai je telefoon een kwartslag. Oxy8 speel je liggend.</div>
       </div>
 
       <nav id="debug" hidden>

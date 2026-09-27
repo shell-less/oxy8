@@ -18,6 +18,8 @@ export class Hud {
   };
   private last = new Map<string, string>();
   private toastTimer = 0;
+  /** On touch screens the HUD leaves out key names: the buttons are on screen. */
+  touch = false;
 
   /** The key legend in the corner; H hides it, remembered per browser. */
   get keysVisible(): boolean {
@@ -58,14 +60,14 @@ export class Hud {
     el.enBar.style.width = `${state.energy}%`;
     this.text(el.enVal, String(Math.round(state.energy)));
 
-    const lampText = `${state.lamp ? 'Lamp aan' : 'Lamp uit'}${state.lamp && lampIsDraining(darkness) ? ' · verbruikt' : ''} · F`;
+    const lampText = `${state.lamp ? 'Lamp aan' : 'Lamp uit'}${state.lamp && lampIsDraining(darkness) ? ' · verbruikt' : ''}${this.touch ? '' : ' · F'}`;
     if (this.text(el.lamp, lampText)) el.lamp.style.color = state.lamp ? '#ffe9a0' : '';
 
     const inv = state.inventory;
     const items: string[] = [];
     if (inv.scrap > 0) items.push(`Schroot ${inv.scrap}`);
-    if (inv.bottles > 0) items.push(`Fles ${inv.bottles} (Q)`);
-    if (inv.beacons > 0) items.push(`Baken ${inv.beacons} (R)`);
+    if (inv.bottles > 0) items.push(`Fles ${inv.bottles}${this.touch ? '' : ' (Q)'}`);
+    if (inv.beacons > 0) items.push(`Baken ${inv.beacons}${this.touch ? '' : ' (R)'}`);
     if (inv.armour) items.push('Pak versterkt');
     this.text(el.inventory, items.join(' · '));
 
@@ -99,7 +101,8 @@ export class Hud {
     }
 
     const info = state.status === 'playing' ? describe(state, state.interaction.target) : null;
-    if (this.text(el.hint, info?.text ?? '')) el.hint.style.opacity = info ? '1' : '0';
+    const hint = info ? (this.touch ? info.text.replace('[E] ', '') : info.text) : '';
+    if (this.text(el.hint, hint)) el.hint.style.opacity = info ? '1' : '0';
 
     if (this.toastTimer > 0) {
       this.toastTimer -= dt;

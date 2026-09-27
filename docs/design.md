@@ -75,6 +75,19 @@ Dying rolls back to the moment you landed on the current planet: the planet, you
 
 **Stranded is game over.** With less energy than a flight costs and no energy cells left on the current planet, the ship can never leave. The game ends and the save is removed. Energy is the long-term resource: spending it on the lamp or on trips back is a real choice.
 
+## Controls
+
+**Keyboard:** WASD or arrows to walk, hold E to act, F lamp, Q bottle, R beacon, M sound, N music, P pause, H hides the key legend.
+
+**Touch screens** (phones and tablets, landscape only; upright shows "Draai je telefoon" and pauses the game):
+
+- **Walking:** a floating stick on the left half of the screen. It appears where the thumb lands and is analog: just past the dead zone you walk at 30% speed, at the rim at full speed. Slow walking helps to step out of a jumper's ring or a glider's line.
+- **Action:** a big button bottom right that you hold, like E. It names what it will do (Openen, Inbouwen, Schip), fills a ring while you hold it, and is dimmed when there is nothing to do.
+- **Small buttons** around it: lamp always, bottle and beacon only while you carry one (with a count).
+- **Pause** button top right: continue, sound, music, tips.
+
+The game picks the layout from the device and then follows what the player last used: a touch switches to the touch layout, a key or mouse click back to the keyboard one. Tips, the HUD and the ship menu leave out key names on touch screens; tips with keys have a `touchText`. On phones the first tap also asks for fullscreen and a landscape lock where the browser allows it (not on iPhone Safari). Everything touch lives in `src/render/touch.ts` and produces the same `InputState` as the keyboard; stick numbers are in `CONFIG.touch`.
+
 ## Tutorial
 
 No tutorial level and no manual. Short tips appear at the moment they become useful, one at a time at the top of the screen, each only once per browser: how to walk, what the bunkers are, that creepers cannot be beaten, where to take a part, what to do when oxygen runs low, the helmet lamp at dusk and without lamp at night, the star map once the engine is ready, and leftovers on earlier planets. The tips live in `src/game/tutorial.ts` in priority order. A small key legend sits in the bottom-left corner of the HUD; item keys fade while you carry nothing to use, and H hides the legend. The title screen can switch them off; a new game does not repeat tips already seen.
@@ -112,6 +125,7 @@ Background music is generated live too (`src/render/music.ts`): a soft pad, a ba
 5. ~~Crafting: scrap, workbench, oxygen bottle, decoy beacon, suit reinforcement~~
 6. ~~Polish: sound, title screen, balance~~
 7. ~~Gliders on Nereid-117, Viridia as planet 4 with every kind of creeper, its own music, title music from the first click~~
+8. ~~Touch controls for phones and tablets~~
 
 ## Open questions
 
