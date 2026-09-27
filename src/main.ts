@@ -1,7 +1,7 @@
 import { CONFIG } from './config';
 import './style.css';
-import { darknessAt, hourOf } from './core/clock';
-import { Keyboard } from './core/input';
+import { darknessAt, formatClock, hourOf } from './core/clock';
+import { Keyboard, mergeInput } from './core/input';
 import { unlockIfRepaired } from './game/campaign';
 import { craft } from './game/crafting';
 import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
@@ -16,6 +16,7 @@ import { Renderer } from './render/renderer';
 import { StarMap } from './render/starmap';
 import { TitleScene } from './render/title';
 import { Tips } from './render/tips';
+import { InputMode, TouchControls } from './render/touch';
 import { PLANETS } from './world/planets';
 
 const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -36,6 +37,14 @@ const starMap = new StarMap(pickDestination, resume, (id) => {
   starMap.open(state);
 });
 const tips = new Tips();
+const inputMode = new InputMode();
+const touch = new TouchControls(gameEl, () => { if (running) pauseMenu(); });
+hud.touch = tips.touch = inputMode.touch;
+inputMode.onChange((isTouch) => {
+  hud.touch = tips.touch = isTouch;
+  if (splash) byId('overlay-sub').textContent = splashText();
+});
+const portrait = matchMedia('(orientation: portrait)');
 const sound = new SoundBoard();
 const music = new Music();
 // Browsers only allow audio after the player did something.
@@ -166,11 +175,15 @@ let splash = false;
  */
 function openingScreen(): void {
   const saved = readSave();
-  showOverlay('Oxy8', '', 'Klik of druk op een toets om te beginnen.', []);
+  showOverlay('Oxy8', '', splashText(), []);
   titleTheme = saved ? PLANETS[saved.live.planetIndex].theme : PLANETS[0].theme;
   setTitleMode(true);
   gameEl.classList.add('splash');
   splash = true;
+}
+
+function splashText(): string {
+  return inputMode.touch ? 'Tik om te beginnen.' : 'Klik of druk op een toets om te beginnen.';
 }
 
 function leaveSplash(): void {
@@ -178,7 +191,39 @@ function leaveSplash(): void {
   splash = false;
   gameEl.classList.remove('splash');
   sound.unlock();
+  if (inputMode.touch) goFullscreen();
   title();
+}
+
+/** On phones, use the whole screen and keep it in landscape where the browser allows it. */
+function goFullscreen(): void {
+  const root = document.documentElement;
+  if (document.fullscreenElement || !root.requestFullscreen) return;
+  root.requestFullscreen({ navigationUI: 'hide' })
+    .then(() => (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.('landscape'))
+    .catch(() => {
+      // Not supported (iPhone Safari) or refused: the game still fits the screen.
+    });
+}
+
+/** Pause menu, opened with the pause button on touch screens or P on a keyboard. */
+function pauseMenu(): void {
+  const toggle = (label: string, on: boolean, flip: () => void): OverlayButton => ({
+    label: `${label}: ${on ? 'aan' : 'uit'}`,
+    action: () => {
+      flip();
+      pauseMenu();
+    },
+  });
+  showOverlay('Pauze', '', `${state.world.planet.name} · ${formatClock(state.time)}`, [
+    { label: 'Verder', action: () => {
+      hideOverlay();
+      resume();
+    } },
+    toggle('Geluid', !sound.muted, () => sound.setMuted(!sound.muted)),
+    toggle('Muziek', music.enabled, () => music.setEnabled(!music.enabled)),
+    toggle('Tips', tips.enabled, () => tips.setEnabled(!tips.enabled)),
+  ]);
 }
 
 /** Title screen: continue a saved game, start a new one, switch tips on or off. */
@@ -278,6 +323,10 @@ window.addEventListener('keydown', (e) => {
     leaveSplash();
     return;
   }
+  if (e.code === 'KeyP' && !e.repeat && running) {
+    pauseMenu();
+    return;
+  }
   if (e.code === 'KeyH' && !e.repeat) {
     hud.setKeysVisible(!hud.keysVisible);
     return;
@@ -336,7 +385,10 @@ function frame(now: number): void {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   t += dt;
-  const input = keyboard.poll();
+  // Turning a phone upright pauses the game; the page asks to turn it back.
+  if (running && inputMode.touch && portrait.matches) pauseMenu();
+  touch.setActive(running && inputMode.touch);
+  const input = mergeInput(keyboard.poll(), touch.poll());
   if (running) {
     step(state, input, dt);
     handleAppEvents();
@@ -354,6 +406,7 @@ function frame(now: number): void {
   if (titleMode) titleScene.draw(dt, titleTheme);
   else renderer.draw(state);
   hud.update(state, dt, t);
+  touch.update(state);
   minimap.update(state, dt, t);
   requestAnimationFrame(frame);
 }

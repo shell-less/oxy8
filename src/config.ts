@@ -130,6 +130,15 @@ export const CONFIG = {
     },
   },
 
+  touch: {
+    /** Stick radius as a share of the game's height on screen. */
+    stickRadius: 0.13,
+    /** Share of the radius where the stick does nothing yet. */
+    deadZone: 0.15,
+    /** Walking speed just past the dead zone, as a share of full speed. */
+    minSpeed: 0.3,
+  },
+
   tips: {
     /** Seconds after landing before the first tip. */
     firstDelay: 0.8,

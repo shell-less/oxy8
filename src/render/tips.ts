@@ -11,6 +11,8 @@ export class Tips {
   private secondsOnPlanet = 0;
   private showing = 0;
   private cooldown = 0;
+  /** Show the touch version of a tip when there is one. */
+  touch = false;
 
   get enabled(): boolean {
     return this.settings.enabled;
@@ -58,7 +60,7 @@ export class Tips {
     if (!tip) return;
     this.seen.add(tip.id);
     this.persist();
-    this.el.querySelector('.tip-text')!.textContent = tip.text;
+    this.el.querySelector('.tip-text')!.textContent = this.touch && tip.touchText ? tip.touchText : tip.text;
     this.el.hidden = false;
     this.showing = CONFIG.tips.showSeconds;
   }

@@ -36,7 +36,7 @@ src/
   systems/           movement, interaction, creepers, hazards, survival, items (scrap pickup, bottle, beacons).
                      Pure functions on GameState.
   render/            renderer (camera, draw order, night lighting, screen effects), sprites,
-                     ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench) and tips (DOM).
+                     ground (painted once per planet), particles, minimap, hud, starmap (ship menu with workbench), tips and touch (on-screen controls, DOM).
 tests/               Vitest tests for world generation and systems.
 ```
 
