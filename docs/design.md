@@ -28,7 +28,11 @@ A full day lasts 5 real minutes. Nights are dark: you see what your helmet lamp,
 
 Slow patrols on an ellipse around bunkers. Every parts bunker has one, plus two supply bunkers. They chase you when you come close, at about 40% of your speed, and give up when you get away or they stray too far from their bunker. They cannot be killed. After a hit they retreat and ignore you for a few seconds.
 
-**Jumpers** (Umbra-9) do not walk. They hop in small jumps around their bunker. When they see you they crouch for about half a second while a red marker shows where they will land; the marker follows you until the jump starts, then stays put. They only hurt you by landing on you, so stepping aside during the jump dodges them. After a pounce they need a moment to recover. Which kind guards a planet is set per planet in `PLANETS`.
+**Jumpers** (Umbra-9) do not walk. They hop in small jumps around their bunker. When they see you they crouch for about half a second while a red marker shows where they will land; the marker follows you until the jump starts, then stays put. They only hurt you by landing on you, so stepping aside during the jump dodges them. After a pounce they need a moment to recover.
+
+**Gliders** (Nereid-117) skate along the ellipse around their bunker. When they see you they brace for 0.7 seconds while a red dotted line shows the direction of their charge; the line follows you until the slide starts, then stays put. They slide in a straight line, faster than you walk, and slow down over about 100 pixels. They cannot steer, so stepping out of the line dodges them. After a slide they sit dazed for a moment and then skate back to their route.
+
+Which kind guards a planet is set per planet in `PLANETS`; a list mixes kinds, taken in turn by the guarded bunkers. A planet can also guard more supply bunkers than the default two.
 
 ## Planets
 
@@ -37,9 +41,9 @@ The order is fixed, so everyone plays the same planets. Planet 1 needs 3 parts, 
 | # | Name | Look | Hazard | Parts |
 | --- | --- | --- | --- | --- |
 | 1 | Kepler-442 | Red dust, craters, turquoise crystals | **Sandstorms**: less sight and speed for you, less sight for creepers. Warning a few seconds before. | 3 |
-| 2 | Nereid-117 | Blue ice plains, tall ice spires | **Freezing nights**: oxygen drain up to 1.9x in the dark | 5 |
+| 2 | Nereid-117 | Blue ice plains, tall ice spires, gliding creepers | **Freezing nights**: oxygen drain up to 1.9x in the dark | 5 |
 | 3 | Umbra-9 | Purple, crater-heavy, pink crystals, jumping creepers | **Meteor showers**: a red ring marks the impact spot, a hit costs 15% | 5 |
-| 4 (later) | Viridia | Green, rocky, yellow crystals | **Toxic pools**: standing in one drains oxygen fast | 5 |
+| 4 | Viridia | Green, rocky, yellow crystals; the finale with crawlers, gliders and jumpers together, and four guarded supply bunkers instead of two (one stays safe) | **Toxic pools**: standing in one drains oxygen fast | 5 |
 
 ## Ship, engine and travel
 
@@ -53,7 +57,7 @@ You always land in the morning next to the ship with a full oxygen tank.
 
 ## Crafting
 
-Hold E at the ship to open the ship menu: the **workbench** on top, the star map below. Recipes cost scrap only, so energy stays the currency for travel and repairs.
+Hold E at the ship to open the ship menu: the **workbench** on the left, the star map on the right (stacked on narrow screens). Recipes cost scrap only, so energy stays the currency for travel and repairs.
 
 | Recipe | Scrap | Effect |
 | --- | --- | --- |
@@ -82,10 +86,12 @@ The numbers live in `src/config.ts`; `tests/balance.test.ts` guards the promises
 - **Every planet pays for itself.** Its energy cells cover all installs, the next flight and one night of lamp, even when you arrive with zero energy. Anything you bring along is slack for the lamp and trips back.
 - **No wasted cells.** A cell stays in its bunker when your bar is too full to take all of it.
 - **Oxygen reach.** Every parts bunker is a round trip from a supply bunker on a freezing night, with a 50% detour and one creeper hit to spare.
-- **Escapable creepers.** Crawlers chase at under 60% of your walking speed; a jumper's landing can be walked out of in time.
+- **Escapable creepers.** Crawlers chase at under 60% of your walking speed; a jumper's landing and a glider's line can be walked out of in time.
 - **Scrap.** One planet holds enough scrap for the suit reinforcement and a bottle.
 
 ## Title screen
+
+The game opens with "Klik of druk op een toets om te beginnen" over the title scene. Browsers only allow sound after the player did something, so this one click or key press lets the title music play while the menu is on screen. A click (not a pointer press) leaves it, so the same click never lands on a menu button.
 
 An animated scene drawn in the same 320x180 pixel style (`src/render/title.ts`): drifting stars, the pixel logo, the ship passing by, and the planet of your saved game rising at the bottom (Kepler-442 for a new game). The buttons sit below it: continue, new game, tips on or off, sound on or off.
 
@@ -95,7 +101,7 @@ All sound is synthesised with Web Audio in `src/render/audio.ts`: no audio files
 
 ## Music
 
-Background music is generated live too (`src/render/music.ts`): a soft pad, a bass note and a sparse arpeggio with echo, looping over a four-chord progression. Every mood has its own key, scale and tempo: the title (D minor, wide), Kepler-442 (A dorian, a bit of drive), Nereid-117 (E minor, slow and glassy), Umbra-9 (C phrygian, eerie) and Viridia (G minor, restless). Music crossfades when you land somewhere else, gets darker at night and softer in menus. N or the title screen switches music off; M still mutes everything.
+Background music is generated live too (`src/render/music.ts`): a soft pad, a bass note and a sparse arpeggio with echo, looping over a four-chord progression. Every mood has its own key, scale and tempo: the title (D minor, wide), Kepler-442 (A dorian, a bit of drive), Nereid-117 (E minor, slow and glassy), Umbra-9 (C phrygian, eerie) and Viridia (G harmonic minor, 104 bpm). Viridia is the finale and gets an extra rhythm layer: a soft kick, off-beat hats and a pulsing bass, mixed to the same peak level as the other moods. Music crossfades when you land somewhere else, gets darker at night and softer in menus. N or the title screen switches music off; M still mutes everything.
 
 ## Roadmap
 
@@ -105,6 +111,7 @@ Background music is generated live too (`src/render/music.ts`): a soft pad, a ba
 4. ~~Tutorial: contextual tips, including the helmet lamp~~
 5. ~~Crafting: scrap, workbench, oxygen bottle, decoy beacon, suit reinforcement~~
 6. ~~Polish: sound, title screen, balance~~
+7. ~~Gliders on Nereid-117, Viridia as planet 4 with every kind of creeper, its own music, title music from the first click~~
 
 ## Open questions
 

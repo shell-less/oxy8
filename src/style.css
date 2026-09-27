@@ -170,8 +170,8 @@ html, body { margin: 0; height: 100%; }
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(64%, 40em);
-  max-height: 86%;
+  width: min(92%, 68em);
+  max-height: 88%;
   display: flex;
   flex-direction: column;
   gap: 0.5em;
@@ -188,6 +188,10 @@ html, body { margin: 0; height: 100%; }
 #workbench-sub { color: var(--muted); }
 .section-title { margin-top: 0.4em; color: #ffe9a0; }
 #starmap { overflow: auto; }
+/* Workbench and star map side by side, so every planet fits without scrolling. */
+.ship-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; align-items: start; }
+.ship-column { display: flex; flex-direction: column; gap: 0.5em; min-width: 0; }
+@media (max-width: 760px) { .ship-columns { grid-template-columns: 1fr; } }
 #inventory { color: #d8e0e8; }
 #inventory:empty { display: none; }
 
@@ -235,3 +239,8 @@ html, body { margin: 0; height: 100%; }
 #game.title-mode #overlay-sub { color: var(--ink); }
 #game.title-mode .btn { background: rgba(6, 4, 16, 0.75); }
 #game.title-mode #overlay-keys { background: rgba(6, 4, 16, 0.6); padding: 0.2em 0.6em; border-radius: 4px; }
+
+/* Opening screen: the prompt pulses gently until the player clicks or presses a key. */
+#game.splash #overlay { cursor: pointer; }
+#game.splash #overlay-sub { animation: splash-pulse 1.6s ease-in-out infinite; }
+@keyframes splash-pulse { 50% { opacity: 0.35; } }

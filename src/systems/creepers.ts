@@ -7,11 +7,13 @@ import { damagePlayer } from './survival';
  * Creepers guard bunkers and cannot be killed; after a hit they retreat for a while.
  * Crawlers walk an ellipse and chase the player, slower than the player.
  * Jumpers hop along the same ellipse and pounce on the player; they only hurt when they land on you.
+ * Gliders skate along the ellipse and charge in a straight line; they cannot steer, so stepping aside dodges them.
  */
 export function updateCreepers(state: GameState, dt: number, aggroRange: number): void {
   for (const c of state.world.creepers) {
     c.cooldown = Math.max(0, c.cooldown - dt);
     if (c.kind === 'jumper') updateJumper(state, c, dt, aggroRange);
+    else if (c.kind === 'glider') updateGlider(state, c, dt, aggroRange);
     else updateCrawler(state, c, dt, aggroRange);
   }
 }
@@ -203,6 +205,82 @@ function rest(state: GameState, c: Creeper): void {
   j.phase = 'rest';
   j.timer = J.restMin + state.rng.next() * J.restJitter;
   if (c.mode === 'chase') c.mode = 'patrol';
+}
+
+function updateGlider(state: GameState, c: Creeper, dt: number, aggroRange: number): void {
+  const G = CONFIG.enemies.glider;
+  const s = c.slide!;
+  const p = state.player;
+  s.timer -= dt;
+
+  switch (s.phase) {
+    case 'glide': {
+      const toPlayer = Math.hypot(p.x - c.x, p.y - c.y);
+      const fromHome = Math.hypot(c.x - c.cx, c.y - c.cy);
+      const canCharge = c.cooldown <= 0 && fromHome < CONFIG.enemies.leashDistance;
+      if (lureFor(state, c) || (canCharge && toPlayer < aggroRange)) {
+        s.phase = 'brace';
+        s.timer = G.braceSeconds;
+        c.mode = 'chase';
+        aimSlide(state, c);
+        break;
+      }
+      const oldX = c.x;
+      c.angle += c.angularSpeed * c.direction * dt;
+      const route = routePoint(c);
+      if (c.mode === 'patrol') {
+        c.x = route.x;
+        c.y = route.y;
+      } else if (stepTowards(c, route.x, route.y, CONFIG.enemies.returnSpeed * dt) < 2) {
+        c.mode = 'patrol';
+      }
+      if (Math.abs(c.x - oldX) > 0.001) c.facing = c.x > oldX ? 1 : -1;
+      break;
+    }
+    case 'brace':
+      // The direction follows the target until the slide starts; then it is fixed and can be dodged.
+      aimSlide(state, c);
+      if (s.timer <= 0) {
+        s.phase = 'slide';
+        s.speed = G.slideSpeed;
+        state.events.push({ type: 'sound', name: 'slide' });
+      }
+      break;
+    case 'slide': {
+      const { width, height } = state.world;
+      c.x = Math.min(width - 8, Math.max(8, c.x + s.dirX * s.speed * dt));
+      c.y = Math.min(height - 8, Math.max(8, c.y + s.dirY * s.speed * dt));
+      s.speed -= G.slideFriction * dt;
+      if (p.invulnerable <= 0 && Math.hypot(p.x - c.x, p.y - c.y) < G.hitRadius) {
+        hurtPlayer(state, c);
+        s.speed = 0;
+      }
+      if (s.speed <= G.stopSpeed) {
+        s.phase = 'recover';
+        s.timer = G.recoverSeconds;
+      }
+      break;
+    }
+    case 'recover':
+      if (s.timer <= 0) {
+        // Skate back to the route; a glider that missed may charge again on the way.
+        s.phase = 'glide';
+        c.mode = 'return';
+      }
+      break;
+  }
+}
+
+/** Point the charge at a beacon if one lures this glider, otherwise at the player. */
+function aimSlide(state: GameState, c: Creeper): void {
+  const s = c.slide!;
+  const target = lureFor(state, c) ?? state.player;
+  const dx = target.x - c.x;
+  const dy = target.y - c.y;
+  const d = Math.hypot(dx, dy) || 1;
+  s.dirX = dx / d;
+  s.dirY = dy / d;
+  if (Math.abs(dx) > 0.5) c.facing = dx > 0 ? 1 : -1;
 }
 
 /** Moves towards a point and returns the distance that was left before the step. */

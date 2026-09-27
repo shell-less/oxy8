@@ -25,11 +25,14 @@ interface MoodDef {
   arpOctave: number;
   /** Pad brightness (low-pass cutoff in Hz) by day. */
   brightness: number;
+  /** Optional rhythm layer: a soft kick, off-beat hats and a pulsing bass instead of a held one. */
+  drive?: boolean;
 }
 
 const DORIAN = [0, 2, 3, 5, 7, 9, 10];
 const MINOR = [0, 2, 3, 5, 7, 8, 10];
 const PHRYGIAN = [0, 1, 3, 5, 7, 8, 10];
+const HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11];
 
 export const MOODS: Record<Mood, MoodDef> = {
   // Wide and hopeful: D minor, i VI III VII.
@@ -40,8 +43,8 @@ export const MOODS: Record<Mood, MoodDef> = {
   blue: { root: 82.41, scale: MINOR, progression: [0, 5, 3, 4], bpm: 58, padWave: 'triangle', arpWave: 'sine', density: 0.35, arpOctave: 4, brightness: 2200 },
   // Umbra-9, purple craters: C phrygian, eerie.
   purple: { root: 65.41, scale: PHRYGIAN, progression: [0, 1, 0, 6], bpm: 70, padWave: 'sawtooth', arpWave: 'triangle', density: 0.3, arpOctave: 3, brightness: 900 },
-  // Viridia, toxic green: G minor, restless.
-  green: { root: 49, scale: MINOR, progression: [0, 3, 5, 4], bpm: 92, padWave: 'square', arpWave: 'square', density: 0.5, arpOctave: 3, brightness: 1000 },
+  // Viridia, the finale: G harmonic minor with a driving rhythm, i VI iv V.
+  green: { root: 49, scale: HARMONIC_MINOR, progression: [0, 5, 3, 4], bpm: 104, padWave: 'sawtooth', arpWave: 'square', density: 0.6, arpOctave: 3, brightness: 1200, drive: true },
 };
 
 const ARP_PATTERN = [0, 1, 2, 1, 0, 2, 1, 2];
@@ -56,6 +59,7 @@ export class Music {
   private bus: GainNode | null = null;
   private padFilter: BiquadFilterNode | null = null;
   private echo: GainNode | null = null;
+  private noiseBuffer: AudioBuffer | null = null;
   private mood: Mood = 'title';
   private pending: Mood | null = null;
   private switchAt = 0;
@@ -86,6 +90,11 @@ export class Music {
     this.echo.connect(delay);
     delay.connect(feedback).connect(delay);
     delay.connect(this.bus);
+
+    // Half a second of white noise for the hats; visual-only randomness, so Math.random is fine.
+    this.noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.5), ctx.sampleRate);
+    const data = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
 
     this.nextStep = ctx.currentTime + 0.1;
     this.fadeIn();
@@ -154,7 +163,15 @@ export class Music {
         this.pad(f, t, length, def.padWave, i === 0 ? 0.05 : 0.035, -6 + i * 6);
         this.pad(f * 1.004, t, length, def.padWave, 0.02, 7);
       });
-      this.bass(noteOf(def, degree, 0), t, length);
+      if (!def.drive) this.bass(noteOf(def, degree, 0), t, length);
+    }
+
+    if (def.drive) {
+      const beat = step % 8;
+      // Pulsing bass on every eighth, with an octave jump on the off-beat of beat two.
+      this.bassPulse(noteOf(def, degree, beat === 3 ? 1 : 0), t, stepSeconds * 0.9);
+      if (beat === 0 || beat === 3 || beat === 4) this.kick(t);
+      if (step % 2 === 1) this.hat(t, beat === 7 ? 0.05 : 0.03);
     }
 
     const bar = step % 8;
@@ -200,6 +217,53 @@ export class Music {
     osc.connect(gain).connect(this.bus!);
     osc.start(t);
     osc.stop(t + length + 0.05);
+  }
+
+  private bassPulse(freq: number, t: number, length: number): void {
+    const ctx = this.ctx!;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(0.08, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + length);
+    osc.connect(gain).connect(this.bus!);
+    osc.start(t);
+    osc.stop(t + length + 0.05);
+  }
+
+  /** A soft, low thump: a sine that drops quickly in pitch. */
+  private kick(t: number): void {
+    const ctx = this.ctx!;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(0.1, t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    osc.connect(gain).connect(this.bus!);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
+
+  /** A short tick of high noise. */
+  private hat(t: number, vol: number): void {
+    const ctx = this.ctx!;
+    if (!this.noiseBuffer) return;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 7000;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    src.connect(filter).connect(gain).connect(this.bus!);
+    src.start(t, Math.random() * 0.4);
+    src.stop(t + 0.06);
   }
 
   private pluck(freq: number, t: number, length: number, wave: OscillatorType): void {

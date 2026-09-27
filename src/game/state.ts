@@ -26,7 +26,7 @@ export type GameEvent =
 export type SoundName =
   | 'pickup' | 'part' | 'supply' | 'install' | 'repaired' | 'craft'
   | 'hurt' | 'bottle' | 'beacon' | 'deny' | 'lamp'
-  | 'pounce' | 'land' | 'storm-warning';
+  | 'pounce' | 'land' | 'slide' | 'storm-warning';
 
 /** 'stranded': too little energy to fly and no energy cells left on this planet. The game is over. */
 export type Status = 'playing' | 'dead' | 'stranded' | 'escaped';

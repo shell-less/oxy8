@@ -5,7 +5,7 @@ import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
 import { radialGlow, rect, type Ctx } from './pixels';
-import { drawBeacon, drawBunker, drawCreeper, drawCrystal, drawPlayer, drawPounceMarker, drawScrap, drawShip } from './sprites';
+import { drawBeacon, drawBunker, drawCreeper, drawCrystal, drawPlayer, drawPounceMarker, drawScrap, drawSlideMarker, drawShip } from './sprites';
 
 const VW = CONFIG.view.width;
 const VH = CONFIG.view.height;
@@ -107,6 +107,7 @@ export class Renderer {
     // Warnings are drawn above the night layer: a fair game shows the danger even in the dark.
     for (const c of world.creepers) {
       if (c.jump && onScreen(c.jump.toX, c.jump.toY)) drawPounceMarker(ctx, c, Math.round(c.jump.toX - cx), Math.round(c.jump.toY - cy), t);
+      if (c.slide && onScreen(c.x, c.y)) drawSlideMarker(ctx, c, Math.round(c.x - cx), Math.round(c.y - cy), t);
     }
     this.drawScreenEffects(state, hour, darkness);
   }

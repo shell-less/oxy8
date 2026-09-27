@@ -33,8 +33,11 @@ export interface Scrap extends Point {
 
 export type CreeperMode = 'patrol' | 'chase' | 'return';
 
-/** Crawlers walk and chase; jumpers hop around and pounce on the player. */
-export type CreeperKind = 'crawler' | 'jumper';
+/**
+ * Crawlers walk and chase; jumpers hop around and pounce on the player;
+ * gliders skate along their route and charge in a straight line over the ice.
+ */
+export type CreeperKind = 'crawler' | 'jumper' | 'glider';
 
 export type JumpPhase = 'rest' | 'hop' | 'crouch' | 'pounce' | 'recover';
 
@@ -52,10 +55,26 @@ export interface JumpState {
   z: number;
 }
 
+export type SlidePhase = 'glide' | 'brace' | 'slide' | 'recover';
+
+/** Glider-only state. A slide runs along (dirX, dirY) and slows down by friction. */
+export interface SlideState {
+  phase: SlidePhase;
+  /** Seconds left in the current phase (brace and recover). */
+  timer: number;
+  /** Unit direction of the charge; follows the target while bracing, fixed while sliding. */
+  dirX: number;
+  dirY: number;
+  /** Current slide speed in pixels per second. */
+  speed: number;
+}
+
 export interface Creeper extends Point {
   kind: CreeperKind;
   /** Only for jumpers. */
   jump: JumpState | null;
+  /** Only for gliders. */
+  slide: SlideState | null;
   /** Centre and radii of the elliptical patrol route around a bunker. */
   cx: number;
   cy: number;

@@ -29,11 +29,12 @@ function setup(): { s: GameState; c: Creeper } {
 }
 
 describe('jumping creepers', () => {
-  it('guard Umbra-9, while the other planets keep crawlers', () => {
+  it('guard Umbra-9, and every planet gets exactly the kinds it asks for', () => {
     expect(UMBRA).toBeGreaterThan(0);
     for (const planet of PLANETS) {
       const kinds = new Set(generateWorld(planet).creepers.map((c) => c.kind));
-      expect([...kinds]).toEqual([planet.creepers ?? 'crawler']);
+      const wanted = planet.creepers ?? 'crawler';
+      expect([...kinds].sort()).toEqual((typeof wanted === 'string' ? [wanted] : [...wanted]).sort());
     }
   });
 

@@ -1,3 +1,4 @@
+import { CONFIG } from '../config';
 import type { Player } from '../game/state';
 import type { Theme } from '../world/themes';
 import type { Beacon } from '../game/state';
@@ -64,6 +65,7 @@ export function drawCrystal(ctx: Ctx, c: Crystal, x: number, y: number, t: numbe
 
 export function drawCreeper(ctx: Ctx, c: Creeper, x: number, y: number, t: number, theme: Theme): void {
   if (c.kind === 'jumper') drawJumper(ctx, c, x, y, t, theme);
+  else if (c.kind === 'glider') drawGlider(ctx, c, x, y, t, theme);
   else drawCrawler(ctx, c, x, y, t, theme);
 }
 
@@ -78,6 +80,78 @@ export function drawPounceMarker(ctx: Ctx, c: Creeper, x: number, y: number, t: 
   rect(ctx, x - 4, y + 2, 9, 1, color);
   rect(ctx, x - 6, y + 1, 2, 1, color);
   rect(ctx, x + 5, y + 1, 2, 1, color);
+}
+
+/** Where a bracing glider will slide: a blinking dotted line on the ground, so the player can step aside. */
+export function drawSlideMarker(ctx: Ctx, c: Creeper, x: number, y: number, t: number): void {
+  const s = c.slide;
+  if (!s || s.phase !== 'brace') return;
+  const color = Math.sin(t * 18) > 0 ? '#ff3050' : '#ff9aa8';
+  const length = CONFIG.enemies.glider.warningLength;
+  for (let d = 8; d < length; d += 4) {
+    rect(ctx, Math.round(x + s.dirX * d), Math.round(y + s.dirY * d), 2, 1, color);
+  }
+  const tipX = Math.round(x + s.dirX * length);
+  const tipY = Math.round(y + s.dirY * length);
+  rect(ctx, tipX - 1, tipY - 1, 3, 3, color);
+}
+
+/**
+ * A flat, wide skater on two runners. Leans back while bracing, sprays ice while sliding,
+ * and sits dazed for a moment afterwards. x, y is the ground point.
+ */
+function drawGlider(ctx: Ctx, c: Creeper, x: number, y: number, t: number, theme: Theme): void {
+  const s = c.slide!;
+  const col = theme.creeper;
+  const f = c.facing;
+  const bracing = s.phase === 'brace';
+  const sliding = s.phase === 'slide';
+  const dazed = s.phase === 'recover';
+  // Bracing: shake in place, a pixel back from where it will go.
+  const shake = bracing ? (Math.sin(t * 40) > 0 ? 1 : 0) - f : 0;
+  const bx = x + shake;
+  rect(ctx, bx - 8, y - 1, 16, 2, SHADOW);
+
+  // Runners, with curled tips in front.
+  rect(ctx, bx - 7, y - 2, 14, 1, col[5]);
+  rect(ctx, f > 0 ? bx + 7 : bx - 8, y - 3, 1, 1, col[5]);
+  rect(ctx, bx - 4, y - 3, 1, 1, col[5]);
+  rect(ctx, bx + 3, y - 3, 1, 1, col[5]);
+
+  // Low body, lower at the back while bracing.
+  const h = bracing ? 4 : 5;
+  const alert = bracing || sliding || c.mode === 'chase';
+  rect(ctx, bx - 7, y - 3 - h, 14, h, alert ? col[1] : col[0]);
+  rect(ctx, bx - 6, y - 4 - h, 12, 1, col[2]);
+  rect(ctx, bx - 5, y - 3 - h, 5, 1, col[3]);
+  rect(ctx, bx - 7, y - 4, 14, 1, col[4]);
+  // Frosty fin on the back.
+  rect(ctx, f > 0 ? bx - 4 : bx + 2, y - 6 - h, 3, 2, col[3]);
+
+  // One wide visor-like eye strip at the front.
+  const ex = f > 0 ? bx + 2 : bx - 6;
+  const ey = y - 1 - h;
+  if (dazed) {
+    rect(ctx, ex, ey, 4, 1, '#f4f0ff');
+    if (Math.sin(t * 6) > 0) rect(ctx, bx, y - 12 - h, 1, 1, '#fff2b0');
+    else rect(ctx, bx - 2, y - 11 - h, 1, 1, '#fff2b0');
+  } else {
+    rect(ctx, ex, ey - 1, 4, 2, '#f4f0ff');
+    rect(ctx, ex + (f > 0 ? 2 : 0), ey - 1, 2, 2, bracing ? '#ff6070' : '#ff3050');
+  }
+
+  // Ice spray behind while sliding.
+  if (sliding) {
+    const back = -f;
+    for (let i = 0; i < 3; i++) {
+      const o = Math.floor(t * 30 + i * 2) % 3;
+      rect(ctx, bx + back * (9 + i * 3 + o), y - 2 - ((i + o) % 3), 1, 1, i === 1 ? '#ffffff' : theme.dust);
+    }
+  }
+  if (bracing && Math.sin(t * 16) > -0.2) {
+    rect(ctx, bx, y - 14 - h, 1, 3, '#ff3050');
+    rect(ctx, bx, y - 10 - h, 1, 1, '#ff3050');
+  }
 }
 
 /** A round hopper with big eyes. Squashes while crouching, stretches in the air. x, y is the ground point. */

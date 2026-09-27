@@ -74,6 +74,16 @@ describe('creepers', () => {
   });
 });
 
+describe('gliders', () => {
+  it('a glider charge can be dodged by stepping out of its line in time', () => {
+    const G = CONFIG.enemies.glider;
+    // Worst case: the player stands at the edge of its sight when the slide starts.
+    const secondsToArrive = CONFIG.enemies.aggroRange / G.slideSpeed;
+    expect(CONFIG.player.speed * secondsToArrive).toBeGreaterThan(G.hitRadius * 2);
+    expect(G.braceSeconds).toBeGreaterThanOrEqual(CONFIG.enemies.jumper.crouchSeconds);
+  });
+});
+
 describe('scrap', () => {
   it('each planet has enough scrap for the suit and a bottle', () => {
     const c = CONFIG.crafting;
