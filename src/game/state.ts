@@ -42,7 +42,8 @@ export type Status = 'playing' | 'dead' | 'stranded' | 'escaped' | 'over';
 /** How a race ended. `winner` is a player id, or null for a draw. */
 export interface RaceResult {
   winner: number | null;
-  reason: 'launch' | 'death' | 'time';
+  /** 'left': the other player dropped out of a network race and did not come back in time. */
+  reason: 'launch' | 'death' | 'time' | 'left';
 }
 
 /** A pod that lands in the centre of a race planet with one part and one energy cell, to break a deadlock. */
