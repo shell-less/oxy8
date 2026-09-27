@@ -49,10 +49,10 @@ export function step(state: GameState, input: InputState | readonly InputState[]
       state.status = 'dead';
     }
   }
-  if (state.status === 'playing' && isStranded(state)) state.status = 'stranded';
+  if (state.mode === 'solo' && state.status === 'playing' && isStranded(state)) state.status = 'stranded';
 
   for (const player of state.players) {
     const seesFar = player.lamp || darkness < 0.3;
-    revealAround(player, seesFar ? CONFIG.player.revealRadius : CONFIG.player.revealRadiusDark);
+    revealAround(state, player, seesFar ? CONFIG.player.revealRadius : CONFIG.player.revealRadiusDark);
   }
 }

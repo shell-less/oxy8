@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { darknessAt, hourOf } from '../core/clock';
-import { localPlayer, type GameState } from '../game/state';
+import { localPlayer, shipOf, type GameState } from '../game/state';
 import { stormIntensity } from '../systems/hazards';
 import { paintGround, paintImpact } from './ground';
 import { Particles } from './particles';
@@ -87,9 +87,13 @@ export class Renderer {
     const onScreen = (x: number, y: number) => x > cx - 40 && x < cx + VW + 40 && y > cy - 40 && y < cy + VH + 40;
     const drawList: [number, () => void][] = [];
     for (const b of world.bunkers) if (onScreen(b.x, b.y)) drawList.push([b.y, () => drawBunker(ctx, b, b.x - cx, b.y - cy, t)]);
-    const ship = world.ship;
-    if (onScreen(ship.x, ship.y)) {
-      drawList.push([ship.y, () => drawShip(ctx, ship.x - cx, ship.y - cy, t, world.planet.partsNeeded, p.partsInstalled)]);
+    // One ship per player; each shows its owner's installed parts.
+    for (const owner of state.players) {
+      const ship = shipOf(state, owner);
+      if (owner.id > 0 && ship === world.ship) continue;
+      if (onScreen(ship.x, ship.y)) {
+        drawList.push([ship.y, () => drawShip(ctx, ship.x - cx, ship.y - cy, t, world.planet.partsNeeded, owner.partsInstalled)]);
+      }
     }
     for (const c of world.crystals) if (onScreen(c.x, c.y)) drawList.push([c.y, () => drawCrystal(ctx, c, c.x - cx, c.y - cy, t, theme)]);
     for (const s of world.scrap) if (!s.taken && onScreen(s.x, s.y)) drawList.push([s.y, () => drawScrap(ctx, s, s.x - cx, s.y - cy, t)]);
@@ -97,7 +101,9 @@ export class Renderer {
     for (const c of world.creepers) {
       if (onScreen(c.x, c.y)) drawList.push([c.y, () => drawCreeper(ctx, c, Math.round(c.x - cx), Math.round(c.y - cy), t, theme)]);
     }
-    drawList.push([p.y, () => drawPlayer(ctx, p, Math.round(p.x - cx), Math.round(p.y - cy), t, p.lamp)]);
+    for (const other of state.players) {
+      if (onScreen(other.x, other.y)) drawList.push([other.y, () => drawPlayer(ctx, other, Math.round(other.x - cx), Math.round(other.y - cy), t, other.lamp)]);
+    }
     drawList.sort((a, b) => a[0] - b[0]).forEach(([, draw]) => draw());
 
     this.particles.draw(ctx, cx, cy);
@@ -116,7 +122,7 @@ export class Renderer {
     const me = localPlayer(state);
     const ia = me.interaction;
     if (ia.progress <= 0 || !ia.target) return;
-    const anchor = ia.target.kind === 'ship' ? state.world.ship : ia.target.bunker;
+    const anchor = ia.target.kind === 'ship' ? shipOf(state, me) : ia.target.bunker;
     const x = anchor.x - this.camX;
     const y = anchor.y - (ia.target.kind === 'ship' ? 30 : 34) - this.camY;
     rect(this.ctx, x - 10, y, 20, 3, '#0b0a14');
@@ -145,9 +151,13 @@ export class Renderer {
     };
     if (p.lamp) hole(p.x - cx + p.facing * 6, p.y - cy - 8, 58 + Math.sin(t * 9) * 1.5, 1);
     else hole(p.x - cx, p.y - cy - 8, 20, 0.65);
+    // Other players' lamps light up the dark too; without a lamp they stay hidden.
+    for (const o of state.players) {
+      if (o !== p && o.lamp && onScreen(o.x, o.y)) hole(o.x - cx + o.facing * 6, o.y - cy - 8, 58, 1);
+    }
     const litBunkers = world.bunkers.filter((b) => (b.kind === 'supply' || !b.looted) && onScreen(b.x, b.y));
     for (const b of litBunkers) hole(b.x - cx, b.y - cy - 12, 32, 0.8);
-    hole(world.ship.x - cx, world.ship.y - cy - 10, 36, 0.7);
+    for (const ship of world.ships) hole(ship.x - cx, ship.y - cy - 10, 36, 0.7);
     for (const c of world.crystals) if (onScreen(c.x, c.y)) hole(c.x - cx, c.y - cy - 4, 16, 0.6);
     for (const pool of world.pools) if (onScreen(pool.x, pool.y)) hole(pool.x - cx, pool.y - cy, pool.rx, 0.35);
     ctx.drawImage(this.light, 0, 0);
@@ -247,8 +257,7 @@ export class Renderer {
     this.smokeTimer -= dt;
     if (this.smokeTimer <= 0) {
       this.smokeTimer = 0.25;
-      const s = state.world.ship;
-      P.spawn(s.x - 24, s.y - 12, -4 - Math.random() * 4, -8 - Math.random() * 6, 1.6, '#6d6670', 2);
+      for (const s of state.world.ships) P.spawn(s.x - 24, s.y - 12, -4 - Math.random() * 4, -8 - Math.random() * 6, 1.6, '#6d6670', 2);
     }
     for (const pool of state.world.pools) {
       if (pool.x > cx - 50 && pool.x < cx + VW + 50 && pool.y > cy - 50 && pool.y < cy + VH + 50 && Math.random() < 0.08) {

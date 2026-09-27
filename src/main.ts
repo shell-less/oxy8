@@ -5,7 +5,7 @@ import { Keyboard, mergeInput } from './core/input';
 import { unlockIfRepaired } from './game/campaign';
 import { craft } from './game/crafting';
 import { clearSave, fromSaveData, readSave, toSaveData, writeSave, type SaveData } from './game/save';
-import { landOn, localPlayer, type GameState } from './game/state';
+import { landOn, localPlayer, startRace, type GameState } from './game/state';
 import { travel, type Destination } from './game/travel';
 import { step } from './game/update';
 import { SoundBoard } from './render/audio';
@@ -96,6 +96,8 @@ function hideOverlay(): void {
 }
 
 function save(): void {
+  // Race mode has no campaign to save, and must not overwrite the solo save.
+  if (state.mode === 'race') return;
   writeSave({ live: toSaveData(state), checkpoint });
 }
 
@@ -280,6 +282,10 @@ function title(): void {
 }
 
 function onDeath(): void {
+  if (state.mode === 'race') {
+    showOverlay('Zuurstof op', '', 'Je pak is leeg.', [{ label: 'Terug naar het menu', action: title }]);
+    return;
+  }
   showOverlay('Zuurstof op', '', `Je pak is leeg. Je begint opnieuw op ${state.world.planet.name}, zoals je hier landde.`, [
     { label: 'Opnieuw landen', action: () => {
       state = fromSaveData(checkpoint);
@@ -371,6 +377,17 @@ if (debug) {
   byId('dbg-energy').addEventListener('click', () => {
     const me = localPlayer(state);
     me.energy = Math.min(100, me.energy + 50);
+    canvas.focus();
+  });
+  // Walk around a mirrored race planet. The second player stands still at the other ship until race rules exist.
+  byId('dbg-race').addEventListener('click', () => {
+    const seed = Math.floor(Math.random() * 1e9);
+    state = startRace(seed);
+    hud.showToast(`Debug: raceplaneet ${state.world.planet.theme.colourName}, seed ${seed}`);
+    music.setMood(state.world.planet.theme.id);
+    setTitleMode(false);
+    hideOverlay();
+    running = true;
     canvas.focus();
   });
   byId('dbg-tips').addEventListener('click', () => {

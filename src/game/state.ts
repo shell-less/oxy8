@@ -1,8 +1,9 @@
 import { CONFIG } from '../config';
 import { createRng, deriveSeed, type Rng } from '../core/rng';
 import { generateWorld } from '../world/generate';
+import { generateRaceWorld, mirror } from '../world/race';
 import { PLANETS } from '../world/planets';
-import type { Bunker, World } from '../world/types';
+import type { Bunker, Point, World } from '../world/types';
 import { applyProgress, newCampaign, type Campaign } from './campaign';
 
 /**
@@ -105,7 +106,12 @@ export interface InteractionState {
   latched: boolean;
 }
 
+/** Solo: the campaign across all planets. Race: two players on one mirrored planet. */
+export type GameMode = 'solo' | 'race';
+
 export interface GameState {
+  mode: GameMode;
+  /** Solo only: index in PLANETS. Race planets are not in PLANETS; this is then the index of their planet type. */
   planetIndex: number;
   world: World;
   /** Everyone on this planet. Solo play has exactly one; the local player is always index 0. */
@@ -141,11 +147,40 @@ export function landOn(planetIndex: number, options: LandingOptions = {}): GameS
   const world = generateWorld(planet);
   const campaign = options.campaign ?? newCampaign();
   const state: GameState = {
+    ...sharedState(world, planet.seed),
+    mode: 'solo',
     planetIndex,
-    world,
-    players: [newPlayer(0, world.ship.x + 40, world.ship.y + 30, options.energy ?? CONFIG.player.startEnergy, options.inventory)],
-    beacons: [],
+    players: [newPlayer(0, world, world.ship.x + 40, world.ship.y + 30, options.energy ?? CONFIG.player.startEnergy, options.inventory)],
     campaign,
+  };
+  const progress = campaign.planets[planetIndex];
+  if (progress) applyProgress(state, progress);
+  return state;
+}
+
+/**
+ * Starts a race: two players on a mirrored planet built from the match seed, each next to
+ * their own ship, in the morning, with full tanks. The race rules come in a later step.
+ */
+export function startRace(matchSeed: number): GameState {
+  const world = generateRaceWorld(matchSeed);
+  const energy = CONFIG.race.startEnergy;
+  const spawn: Point = { x: world.ships[0].x + 40, y: world.ships[0].y + 30 };
+  const other = mirror(spawn, world.width, world.height);
+  return {
+    ...sharedState(world, matchSeed),
+    mode: 'race',
+    planetIndex: PLANETS.findIndex((p) => p.theme === world.planet.theme),
+    players: [newPlayer(0, world, spawn.x, spawn.y, energy), newPlayer(1, world, other.x, other.y, energy)],
+    campaign: newCampaign(),
+  };
+}
+
+/** The parts of a fresh GameState that do not depend on the mode. */
+function sharedState(world: World, seed: number): Omit<GameState, 'mode' | 'planetIndex' | 'players' | 'campaign'> {
+  return {
+    world,
+    beacons: [],
     time: (CONFIG.day.startHour / 24) * CONFIG.day.lengthSeconds,
     timeScale: 1,
     hazards: {
@@ -158,16 +193,13 @@ export function landOn(planetIndex: number, options: LandingOptions = {}): GameS
       coldMultiplier: 1,
     },
     status: 'playing',
-    rng: createRng(deriveSeed(planet.seed, 2)),
+    rng: createRng(deriveSeed(seed, 2)),
     events: [],
   };
-  const progress = campaign.planets[planetIndex];
-  if (progress) applyProgress(state, progress);
-  return state;
 }
 
 /** A fresh astronaut standing at (x, y) with a full oxygen tank. */
-export function newPlayer(id: number, x: number, y: number, energy: number, inventory?: Inventory): Player {
+export function newPlayer(id: number, world: World, x: number, y: number, energy: number, inventory?: Inventory): Player {
   return {
     id,
     x,
@@ -187,8 +219,13 @@ export function newPlayer(id: number, x: number, y: number, energy: number, inve
     lamp: true,
     interaction: { target: null, progress: 0, latched: false },
     inPool: false,
-    explored: new Uint8Array(CONFIG.world.tilesX * CONFIG.world.tilesY),
+    explored: new Uint8Array(world.tilesX * world.tilesY),
   };
+}
+
+/** The ship this player repairs and launches: their own on a race planet, the only one in solo play. */
+export function shipOf(state: GameState, player: Player): Point {
+  return state.world.ships[player.id] ?? state.world.ship;
 }
 
 /** The player this browser controls, whose view the renderer and HUD show. Always index 0. */

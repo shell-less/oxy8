@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import type { InputState } from '../core/input';
 import { unlockIfRepaired } from '../game/campaign';
-import { emit, isRepaired, type GameState, type Player, type Target } from '../game/state';
+import { emit, isRepaired, shipOf, type GameState, type Player, type Target } from '../game/state';
 import { PLANETS } from '../world/planets';
 
 export type Action = 'install' | 'starmap' | 'open' | 'none';
@@ -28,7 +28,7 @@ export function findTarget(state: GameState, p: Player): Target | null {
       best = { kind: 'bunker', bunker };
     }
   }
-  const ship = state.world.ship;
+  const ship = shipOf(state, p);
   if (!best && Math.hypot(p.x - ship.x, p.y - (ship.y + 2)) < shipRange) best = { kind: 'ship' };
   return best;
 }
@@ -111,7 +111,7 @@ function perform(state: GameState, p: Player, target: Target, action: Action): v
       emit(state, { type: 'starmap' });
       return;
     }
-    const ship = state.world.ship;
+    const ship = shipOf(state, p);
     p.partsInstalled++;
     p.energy -= CONFIG.energy.installCost;
     emit(state, { type: 'burst', x: ship.x - 13 + (p.partsInstalled - 1) * 6, y: ship.y - 9, color: '#7dff8a', count: 16 });

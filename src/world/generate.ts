@@ -1,9 +1,10 @@
 import { CONFIG } from '../config';
 import { createRng, deriveSeed, type Rng } from '../core/rng';
 import type { PlanetDef } from './planets';
-import type { Bunker, Circle, Creeper, Crystal, Pool, Scrap, World } from './types';
+import type { Theme } from './themes';
+import type { Bunker, Circle, Creeper, CreeperKind, Crystal, Pool, Scrap, World } from './types';
 
-const MARGIN = 40;
+export const MARGIN = 40;
 
 /** Places circles without overlap. Falls back to a random spot when the map is too crowded. */
 class Placer {
@@ -76,46 +77,13 @@ export function generateWorld(planet: PlanetDef): World {
   const crystals: Crystal[] = [];
   for (let i = 0; i < theme.crystalCount; i++) {
     const spot = placer.place(5, 14);
-    crystals.push({
-      x: spot.x,
-      y: spot.y,
-      phase: rng.next() * Math.PI * 2,
-      spikes: [[-3, 5], [0, 8], [3, 4]].map(([dx, h]) => ({
-        dx,
-        h: h + theme.crystalHeight + rng.int(0, 2 + theme.crystalHeight),
-      })),
-    });
+    crystals.push(makeCrystal(rng, spot.x, spot.y, theme));
   }
 
   const guardedSupply = planet.guardedSupplyBunkers ?? CONFIG.layout.guardedSupplyBunkers;
   const guarded = bunkers.filter((b) => b.kind === 'parts' || b.id - planet.partsNeeded < guardedSupply);
-  const creepers: Creeper[] = guarded.map((b, i) => {
-    const rx = rng.range(40, 54);
-    const ry = rng.range(28, 36);
-    const angle = rng.next() * Math.PI * 2;
-    const cx = b.x;
-    const cy = b.y - 4;
-    const kinds = planet.creepers ?? 'crawler';
-    const kind = typeof kinds === 'string' ? kinds : kinds[i % kinds.length];
-    const x = cx + Math.cos(angle) * rx;
-    const y = cy + Math.sin(angle) * ry;
-    return {
-      kind,
-      // Jumpers and gliders take no extra random numbers, so older planets generate exactly as before.
-      jump: kind === 'jumper'
-        ? { phase: 'rest', timer: 0.5 + (b.id % 4) * 0.3, duration: 0, fromX: x, fromY: y, toX: x, toY: y, z: 0 }
-        : null,
-      slide: kind === 'glider' ? { phase: 'glide', timer: 0, dirX: 1, dirY: 0, speed: 0 } : null,
-      cx, cy, rx, ry, angle,
-      direction: rng.chance(0.5) ? 1 : -1,
-      angularSpeed: CONFIG.enemies.patrolSpeed / ((rx + ry) / 2),
-      x,
-      y,
-      facing: 1,
-      mode: 'patrol',
-      cooldown: 0,
-    };
-  });
+  const kinds = planet.creepers ?? 'crawler';
+  const creepers: Creeper[] = guarded.map((b, i) => makeCreeper(rng, b, typeof kinds === 'string' ? kinds : kinds[i % kinds.length]));
 
   const solids: Circle[] = [
     ...rocks,
@@ -127,7 +95,54 @@ export function generateWorld(planet: PlanetDef): World {
 
   const scrap = placeScrap(planet, width, height, ship, solids, pools);
 
-  return { planet, width, height, ship, bunkers, rocks, crystals, pools, creepers, scrap, solids };
+  return { planet, tilesX, tilesY, width, height, ship, ships: [ship], bunkers, rocks, crystals, pools, creepers, scrap, solids };
+}
+
+/** A crystal cluster at (x, y). Takes three random numbers per spike after the phase, always in this order. */
+export function makeCrystal(rng: Rng, x: number, y: number, theme: Theme): Crystal {
+  return {
+    x,
+    y,
+    phase: rng.next() * Math.PI * 2,
+    spikes: [[-3, 5], [0, 8], [3, 4]].map(([dx, h]) => ({
+      dx,
+      h: h + theme.crystalHeight + rng.int(0, 2 + theme.crystalHeight),
+    })),
+  };
+}
+
+/**
+ * A creeper patrolling an ellipse around a bunker. The random numbers are taken in a fixed order
+ * (radii, start angle, direction), so existing planets generate exactly as before.
+ */
+export function makeCreeper(rng: Rng, b: Bunker, kind: CreeperKind): Creeper {
+  const rx = rng.range(40, 54);
+  const ry = rng.range(28, 36);
+  const angle = rng.next() * Math.PI * 2;
+  const direction = rng.chance(0.5) ? 1 : -1;
+  return creeperOn(b.x, b.y - 4, rx, ry, angle, direction, kind, b.id);
+}
+
+/** A creeper at a given point of its route. Takes no random numbers, so race planets can mirror one exactly. */
+export function creeperOn(cx: number, cy: number, rx: number, ry: number, angle: number, direction: 1 | -1, kind: CreeperKind, bunkerId: number): Creeper {
+  const x = cx + Math.cos(angle) * rx;
+  const y = cy + Math.sin(angle) * ry;
+  return {
+    kind,
+    // Jumpers and gliders take no extra random numbers, so older planets generate exactly as before.
+    jump: kind === 'jumper'
+      ? { phase: 'rest', timer: 0.5 + (bunkerId % 4) * 0.3, duration: 0, fromX: x, fromY: y, toX: x, toY: y, z: 0 }
+      : null,
+    slide: kind === 'glider' ? { phase: 'glide', timer: 0, dirX: 1, dirY: 0, speed: 0 } : null,
+    cx, cy, rx, ry, angle,
+    direction,
+    angularSpeed: CONFIG.enemies.patrolSpeed / ((rx + ry) / 2),
+    x,
+    y,
+    facing: 1,
+    mode: 'patrol',
+    cooldown: 0,
+  };
 }
 
 /**
