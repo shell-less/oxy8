@@ -25,7 +25,7 @@ export function eventVisibleTo(event: GameEvent, viewer: Player): boolean {
   return event.type !== 'progress';
 }
 
-export function snapshotFor(state: GameState, seat: number, tick: number, events: GameEvent[]): Snapshot {
+export function snapshotFor(state: GameState, seat: number, tick: number, events: GameEvent[], ack = 0, ackAge = 0): Snapshot {
   const me = state.players[seat];
   const other = state.players.find((p) => p.id !== seat);
   const race = state.race;
@@ -59,6 +59,8 @@ export function snapshotFor(state: GameState, seat: number, tick: number, events
       .map((b) => ({ ...b })),
     drop: { ...race.drop },
     events,
+    ack,
+    ackAge,
   };
 }
 

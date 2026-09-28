@@ -70,7 +70,7 @@ export class RaceRoom extends DurableObject<Env> {
     const { seat } = attachment(ws);
     const message = parseClientMessage(typeof data === 'string' ? data : null);
     if (!match || seat < 0 || !message) return;
-    if (message.t === 'input') match.input(seat, message.input, now());
+    if (message.t === 'input') match.input(seat, message.input, now(), message.seq);
     else if (message.t === 'craft') match.craft(seat, message.id);
     else match.rematch(seat);
     this.updateTimer();

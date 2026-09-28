@@ -12,6 +12,8 @@ const ONE_SHOTS = ['toggleLamp', 'useBottle', 'placeBeacon', 'placeBomb'] as con
 export class InputSender {
   private sent: InputState = NO_INPUT;
   private sentAt = -Infinity;
+  /** Number of the last input sent; 0 before the first. */
+  seq = 0;
   private pressed = new Set<(typeof ONE_SHOTS)[number]>();
 
   /** The input to send now, or null when nothing needs sending. `now` in seconds. */
@@ -23,8 +25,14 @@ export class InputSender {
     if (now - this.sentAt < 1 / CONFIG.net.maxInputsPerSecond) return null;
     this.sent = wanted;
     this.sentAt = now;
+    this.seq++;
     this.pressed.clear();
     return wanted;
+  }
+
+  /** The input the server has (or is about to get) for this moment: the last one sent. */
+  get current(): InputState {
+    return this.sent;
   }
 }
 

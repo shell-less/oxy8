@@ -619,7 +619,7 @@ function frame(now: number): void {
     // A network race: the server simulates, this browser sends input and draws the mirror.
     const input = mergeInput(keyboard.poll(), touch.poll());
     if (running) {
-      online.update(starMap.isOpen ? NO_INPUT : input, now / 1000);
+      online.update(starMap.isOpen ? NO_INPUT : input, now / 1000, dt);
       handleAppEvents();
       if (state.status === 'over') onRaceOver();
     }

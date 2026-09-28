@@ -5,6 +5,7 @@ import type { RecipeId } from '../game/crafting';
 import type { GameState } from '../game/state';
 import { applySnapshot, createMirror } from '../net/apply';
 import type { ClientMessage, ServerMessage } from '../net/protocol';
+import { Predictor } from '../net/predict';
 import { InputSender } from '../net/sender';
 import { Smoother } from '../net/smooth';
 import { revealAround } from '../systems/movement';
@@ -36,6 +37,7 @@ export class OnlineRace {
   private ws: WebSocket | null = null;
   private sender = new InputSender();
   private smoother = new Smoother();
+  private predictor = new Predictor();
   private closedByUs = false;
   /** Seconds left to get back in after the connection dropped; null while connected. */
   private reconnectUntil: number | null = null;
@@ -59,12 +61,13 @@ export class OnlineRace {
     return race;
   }
 
-  /** Every frame: send input when it changed, glide positions, reveal the own minimap. */
-  update(input: InputState, now: number): void {
+  /** Every frame: send input when it changed, move the own astronaut at once, glide the rest, reveal the own minimap. */
+  update(input: InputState, now: number, dt: number): void {
     const state = this.state;
     if (!state) return;
     const next = this.sender.next(input, now);
-    if (next) this.send({ t: 'input', input: next });
+    if (next) this.send({ t: 'input', input: next, seq: this.sender.seq });
+    this.predictor.step(state, this.seat, this.sender.current, this.sender.seq, dt);
     this.smoother.frame(state, now);
     const me = state.players[this.seat];
     if (me) {
@@ -109,13 +112,17 @@ export class OnlineRace {
         this.state = createMirror(m.seed, m.seat);
         this.state.race!.online = true;
         this.sender = new InputSender();
-        this.smoother = new Smoother();
+        this.smoother = new Smoother(m.seat);
+        this.predictor = new Predictor();
         this.events.start(this.state, m.seat);
         break;
       case 'snap':
         if (!this.state) return;
+        const me = this.state.players[this.seat];
+        const shown = { x: me.x, y: me.y };
         this.smoother.before(this.state);
         applySnapshot(this.state, m.snap, this.seat);
+        this.predictor.reconcile(this.state, this.seat, m.snap.ack, m.snap.ackAge, shown);
         this.smoother.after(this.state, performance.now() / 1000);
         break;
       case 'opponent-away':

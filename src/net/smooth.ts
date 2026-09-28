@@ -35,6 +35,9 @@ export class Smoother {
   /** Seconds between snapshots. */
   private readonly interval = CONFIG.net.snapshotEvery / CONFIG.net.tickRate;
 
+  /** `own` is the player id whose astronaut is predicted instead (see predict.ts), so left alone here. */
+  constructor(private readonly own = -1) {}
+
   /** Call right before a snapshot is applied: remembers where everything is drawn now. */
   before(state: GameState): void {
     this.from = positions(state);
@@ -52,6 +55,7 @@ export class Smoother {
     if (this.to.length === 0) return;
     const t = Math.min(1, Math.max(0, (now - this.arrivedAt) / this.interval));
     place(state, this.to.map((to, i) => {
+      if (i === this.own) return { x: state.players[i].x, y: state.players[i].y };
       const from = this.from[i];
       if (!from || from.x < OFF_MAP || to.x < OFF_MAP || Math.hypot(to.x - from.x, to.y - from.y) > SNAP_DISTANCE) return to;
       return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
