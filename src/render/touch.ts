@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { NO_INPUT, stickVector, type InputState } from '../core/input';
 import { localPlayer, type GameState } from '../game/state';
+import { bombPlacementProblem } from '../systems/bombs';
 import { describe, type Action } from '../systems/interaction';
 
 const ACTION_LABELS: Record<Action, string> = {
@@ -11,12 +12,12 @@ const ACTION_LABELS: Record<Action, string> = {
   none: 'Actie',
 };
 
-type OneShot = 'toggleLamp' | 'useBottle' | 'placeBeacon';
+type OneShot = 'toggleLamp' | 'useBottle' | 'placeBeacon' | 'placeBomb';
 
 /**
  * On-screen controls for touch screens: a floating stick on the left half (it appears where the
  * thumb lands), a big action button to hold on the right, and small buttons for the lamp, the
- * bottle and the beacon. Produces an InputState just like the keyboard does.
+ * bottle, the beacon and (in a race) the bomb. Produces an InputState just like the keyboard does.
  *
  * The page switches between touch and keyboard layout by what the player last used; the
  * `touch` class on <html> drives the CSS.
@@ -31,6 +32,7 @@ export class TouchControls {
   private lamp: HTMLButtonElement;
   private bottle: HTMLButtonElement;
   private beacon: HTMLButtonElement;
+  private bomb: HTMLButtonElement;
   readonly pause: HTMLButtonElement;
 
   private stickId: number | null = null;
@@ -56,9 +58,11 @@ export class TouchControls {
     this.lamp = button('touch-small touch-lamp', 'Lamp');
     this.bottle = button('touch-small touch-bottle', 'Fles');
     this.beacon = button('touch-small touch-beacon', 'Baken');
+    this.bomb = button('touch-small touch-bomb', 'Bom');
+    this.bomb.hidden = true;
     this.pause = button('touch-pause', '');
     this.pause.setAttribute('aria-label', 'Pauze');
-    this.root.append(this.zone, this.lamp, this.bottle, this.beacon, this.action, this.pause);
+    this.root.append(this.zone, this.lamp, this.bottle, this.beacon, this.bomb, this.action, this.pause);
     game.append(this.root);
     this.root.hidden = true;
 
@@ -81,6 +85,7 @@ export class TouchControls {
     this.tap(this.lamp, () => this.pressed.add('toggleLamp'));
     this.tap(this.bottle, () => this.pressed.add('useBottle'));
     this.tap(this.beacon, () => this.pressed.add('placeBeacon'));
+    this.tap(this.bomb, () => this.pressed.add('placeBomb'));
     this.tap(this.pause, onPause);
     // Long presses must not open a context menu on the controls.
     this.root.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -109,8 +114,7 @@ export class TouchControls {
       toggleLamp: this.pressed.has('toggleLamp'),
       useBottle: this.pressed.has('useBottle'),
       placeBeacon: this.pressed.has('placeBeacon'),
-      // Race mode is keyboard-only for now; a touch bomb button comes with mobile race testing.
-      placeBomb: false,
+      placeBomb: this.pressed.has('placeBomb'),
     };
     this.pressed.clear();
     return input;
@@ -137,6 +141,12 @@ export class TouchControls {
     this.set('beacon', String(inv.beacons), () => {
       this.beacon.hidden = inv.beacons === 0;
       this.beacon.dataset.count = String(inv.beacons);
+    });
+    // Only while carrying a bomb; dimmed where it may not lie (away from bunkers, near a ship).
+    const bombState = me.bombs === 0 ? 'none' : bombPlacementProblem(state, me) ? 'blocked' : 'ok';
+    this.set('bomb', bombState, () => {
+      this.bomb.hidden = bombState === 'none';
+      this.bomb.classList.toggle('unavailable', bombState === 'blocked');
     });
   }
 

@@ -381,6 +381,9 @@ html.touch #minimap { bottom: auto; top: calc(14px + 6.9em); width: 15%; }
 .touch-bottle { right: calc(5% + 7.4em); bottom: calc(9% + 5.4em); }
 .touch-beacon { right: calc(5% + 1.6em); bottom: calc(9% + 8em); }
 .touch-lamp.on { color: #ffe9a0; border-color: rgba(255, 233, 160, 0.6); }
+/* Race only: left of the lamp, in red, dimmed where a bomb may not lie. */
+.touch-bomb { right: calc(5% + 12.4em); bottom: 9%; color: #ff8a8a; border-color: rgba(255, 80, 96, 0.7); }
+.touch-bomb.unavailable { opacity: 0.4; }
 .touch-small[data-count]:not([data-count='1'])::after {
   content: attr(data-count);
   position: absolute;

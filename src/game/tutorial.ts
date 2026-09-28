@@ -72,12 +72,14 @@ export const TIPS: readonly Tip[] = [
   {
     id: 'race-bomb-near',
     text: 'Gepiep of een rood knipperlichtje? Daar ligt een bom. Kom niet te dichtbij. Houd op een paar passen afstand de actie vast om hem te ontmantelen.',
+    touchText: 'Gepiep of een rood knipperlichtje? Daar ligt een bom. Kom niet te dichtbij. Houd op een paar passen afstand de actieknop vast om hem te ontmantelen.',
     when: (s) => (s.race?.bombs ?? []).some((b) => b.owner !== me(s).id && near(s, b.x, b.y, CONFIG.race.bomb.beepRange)),
     modes: ['race'],
   },
   {
     id: 'race-bomb-carry',
     text: 'Je hebt een bom. Leg hem met B vlak bij een bunker (speler 2 aan hetzelfde toetsenbord: komma). Na drie seconden staat hij scherp, ook voor jou.',
+    touchText: 'Je hebt een bom. Tik op de bom-knop vlak bij een bunker; waar het niet mag, is hij grijs. Na drie seconden staat hij scherp, ook voor jou.',
     when: (s) => me(s).bombs > 0,
     modes: ['race'],
   },
