@@ -210,7 +210,9 @@ The world layout is not sent: both clients generate it from the match seed. A sn
 
 **The client**
 
-The browser does not simulate a network race. It keeps a mirror `GameState`: the world from the seed, dynamic parts overwritten by each snapshot, positions interpolated about 100 ms behind, so the renderer, HUD and minimap work unchanged. Own movement then feels about one round trip late; if that is too sluggish for a casual game, client-side prediction for the own astronaut comes after the first playtest, not before.
+The browser does not simulate a network race. It keeps a mirror `GameState`: the world from the seed, dynamic parts overwritten by each snapshot, so the renderer, HUD and minimap work unchanged. The other astronaut and the creepers glide between snapshots (`net/smooth.ts`).
+
+The own astronaut is predicted (`net/predict.ts`), because the first playtest felt sluggish with a round trip between key and movement. The browser moves it at once with the same `movePlayer()` the server runs, and numbers every input it sends. Each snapshot says which input the server stepped with last and for how long; the browser puts its astronaut where the server has it and replays everything after that. Walking stays exactly where the player expects it. Only real disagreements show, eased in when small: a creeper's knockback, or the up to one tick (about 3 px) that the 20 Hz server walks longer or shorter after a key is released.
 
 **Code and deployment**
 

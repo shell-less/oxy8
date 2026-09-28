@@ -10,8 +10,8 @@ import type { CreeperMode, JumpState, SlideState } from '../world/types';
  */
 
 export type ClientMessage =
-  /** The player's current input. Sent only when it changes. */
-  | { t: 'input'; input: InputState }
+  /** The player's current input. Sent only when it changes; `seq` counts up with every input message. */
+  | { t: 'input'; input: InputState; seq?: number }
   /** A recipe from the workbench; the server checks the player stands at their ship. */
   | { t: 'craft'; id: RecipeId }
   /** After a race: ready for a new planet. Both players must ask. */
@@ -97,6 +97,12 @@ export interface Snapshot {
   drop: SupplyDrop;
   /** This player's events since the last snapshot. */
   events: GameEvent[];
+  /**
+   * For predicting the own astronaut: the `seq` of the input the server stepped with last, and
+   * for how many seconds it has stepped with it. The browser replays whatever came after.
+   */
+  ack: number;
+  ackAge: number;
 }
 
 /**
@@ -113,7 +119,10 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
   }
   if (!data || typeof data !== 'object') return null;
   const m = data as Record<string, unknown>;
-  if (m.t === 'input' && m.input && typeof m.input === 'object') return { t: 'input', input: m.input as InputState };
+  if (m.t === 'input' && m.input && typeof m.input === 'object') {
+    const seq = typeof m.seq === 'number' && Number.isInteger(m.seq) && m.seq >= 0 ? m.seq : undefined;
+    return { t: 'input', input: m.input as InputState, seq };
+  }
   if (m.t === 'craft' && typeof m.id === 'string') return { t: 'craft', id: m.id as RecipeId };
   if (m.t === 'rematch') return { t: 'rematch' };
   return null;

@@ -26,6 +26,9 @@ interface Seat {
   awaySince: number | null;
   /** The last input received: movement and held buttons. */
   input: InputState;
+  /** Its `seq`, and seconds the race has stepped with it: echoed in snapshots for prediction. */
+  seq: number;
+  appliedFor: number;
   /** One-shot presses received since the last tick, so none is lost between ticks. */
   pressed: Set<(typeof ONE_SHOTS)[number]>;
   rematch: boolean;
@@ -104,7 +107,7 @@ export class Match {
   }
 
   /** The player's current input. Held values replace the old ones; one-shot presses wait for the next tick. */
-  input(seat: number, input: InputState, now: number): void {
+  input(seat: number, input: InputState, now: number, seq?: number): void {
     const s = this.seats[seat];
     if (!s || this.phase !== 'playing') return;
     if (now - s.inputWindowStart >= 1) {
@@ -115,6 +118,9 @@ export class Match {
     if (++s.inputsInWindow > CONFIG.net.maxInputsPerSecond * 2) return;
     const clean = sanitize(input);
     s.input = clean;
+    // Messages arrive in order over one socket; after a reconnect the browser starts counting again.
+    if (seq !== undefined) s.seq = seq;
+    s.appliedFor = 0;
     for (const key of ONE_SHOTS) if (clean[key]) s.pressed.add(key);
   }
 
@@ -146,6 +152,7 @@ export class Match {
       const inputs = this.seats.map((s) => (s.connected ? withPresses(s) : NO_INPUT));
       for (const s of this.seats) s.pressed.clear();
       step(state, inputs, 1 / CONFIG.net.tickRate);
+      for (const s of this.seats) s.appliedFor += 1 / CONFIG.net.tickRate;
       this.distributeEvents();
     }
     this.tickCount++;
@@ -162,6 +169,8 @@ export class Match {
     this.tickCount = 0;
     for (const [seat, s] of this.seats.entries()) {
       s.input = NO_INPUT;
+      s.seq = 0;
+      s.appliedFor = 0;
       s.pressed.clear();
       s.rematch = false;
       s.events = [];
@@ -192,7 +201,7 @@ export class Match {
 
   private sendSnapshot(seat: number): void {
     const s = this.seats[seat];
-    const snap = snapshotFor(this.state!, seat, this.tickCount, s.events);
+    const snap = snapshotFor(this.state!, seat, this.tickCount, s.events, s.seq, s.appliedFor);
     s.events = [];
     this.send(seat, { t: 'snap', snap });
   }
@@ -203,7 +212,7 @@ export class Match {
 }
 
 function newSeat(now: number): Seat {
-  return { connected: true, awaySince: null, input: NO_INPUT, pressed: new Set(), rematch: false, events: [], inputWindowStart: now, inputsInWindow: 0 };
+  return { connected: true, awaySince: null, input: NO_INPUT, seq: 0, appliedFor: 0, pressed: new Set(), rematch: false, events: [], inputWindowStart: now, inputsInWindow: 0 };
 }
 
 function withPresses(s: Seat): InputState {
