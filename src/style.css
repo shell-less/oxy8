@@ -8,7 +8,9 @@
   --energy: #ffd24a;
   --warn: #ffb347;
   --danger: #ff5060;
-  font-family: 'Pixelify Sans', ui-monospace, monospace;
+  font-family: 'Jersey 10', ui-monospace, monospace;
+  /* Jersey 10 has one weight; a faked bold would smear the pixels. */
+  font-synthesis: none;
   color: var(--ink);
   background: var(--bg);
 }
@@ -33,7 +35,10 @@ html, body { margin: 0; height: 100%; }
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 8px;
-  font-size: clamp(10px, 1.4vw, 15px);
+  /* Jersey 10 draws a little smaller than a typical font at the same size. */
+  font-size: clamp(11.5px, 1.6vw, 17px);
+  /* Jersey 10 brings a tall line gap; wrapped tips read better closer together. */
+  line-height: 1.15;
   user-select: none;
 }
 
@@ -51,7 +56,7 @@ html, body { margin: 0; height: 100%; }
   border: 1px solid var(--panel-line);
   border-radius: 4px;
   padding: 0.4em 0.6em;
-  line-height: 1.5;
+  line-height: 1.3;
 }
 
 #stats { top: 8px; left: 8px; }

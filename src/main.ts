@@ -1,4 +1,6 @@
 import { CONFIG } from './config';
+// The pixel font ships with the game (no Google Fonts request). Jersey 10: 2, 3 and Z are easy to tell apart.
+import '@fontsource/jersey-10/latin-400.css';
 import './style.css';
 import { darknessAt, formatClock, hourOf } from './core/clock';
 import { mergeInput, NO_INPUT } from './core/input';
