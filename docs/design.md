@@ -168,7 +168,7 @@ Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px
 
 ### Playing online
 
-"Race online" on the title screen offers "Kamer maken" and "Meedoen met code". The maker sees the four-letter code large on the title scene and passes it on; the other types it in (any case, spaces allowed). The race starts the moment the second player is in, with a toast saying which side your ship is on. One player per device: WASD or arrows, E, F, Q, R and B for the bomb; touch works except for bombs.
+"Race online" on the title screen offers "Kamer maken" and "Meedoen met code". The maker sees the four-letter code large on the title scene and passes it on; the other types it in (any case, spaces allowed). The race starts the moment the second player is in, with a toast saying which side your ship is on. One player per device: WASD or arrows, E, F, Q, R and B for the bomb. On a touch screen a red "Bom" button appears left of the lamp while you carry a bomb; it is dimmed where a bomb may not lie (away from a bunker, near a ship).
 
 Online there is no pause, and the workbench does not stop the race. A dropped connection reconnects by itself for 20 seconds; the other player sees "De ander is weggevallen" and "De ander is terug". The result is told from your side ("Je wint", "Je liep op een bom") with "Revanche" and "Menu".
 
@@ -234,7 +234,7 @@ The own astronaut is predicted (`net/predict.ts`), because the first playtest fe
 3. Race rules, testable with two players on one keyboard, so balancing can start before there is a server. Split in three:
    - ~~3a. Local race: two players on one keyboard, Tab to switch, launch to win, every death loses, time limit, result screen.~~
    - ~~3b. Hidden empty bunkers and the supply drop.~~
-   - ~~3c. Bombs and defusing.~~ The bomb is on the workbench in a race only; the result screen says when someone stepped on a bomb. Touch has no bomb button yet (step 5).
+   - ~~3c. Bombs and defusing.~~ The bomb is on the workbench in a race only; the result screen says when someone stepped on a bomb. Touch got its bomb button with online races.
 4. Room server and room codes, in three pull requests:
    - 4a. Match core and per-player view: `src/net/`, pure and tested, no Cloudflare yet.
    - 4b. The Worker and Durable Object, local runs with `wrangler dev`, the deploy workflow.
