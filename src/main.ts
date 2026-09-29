@@ -64,8 +64,6 @@ window.addEventListener('keydown', () => sound.unlock());
 
 const params = new URLSearchParams(location.search);
 const debug = import.meta.env.DEV || params.has('debug');
-/** Race mode is still being built: only in development, with ?debug, or with ?race in the address. */
-const raceAvailable = debug || params.has('race');
 
 let state: GameState = landOn(0);
 /** The connection while in a network race; null otherwise. */
@@ -313,8 +311,9 @@ function title(): void {
   setTitleMode(true);
 }
 
+/** Race online is for everyone; the local race (two players on one keyboard) is a debug tool for testing rules. */
 function raceButton(): OverlayButton[] {
-  return raceAvailable ? [{ label: 'Race online', action: onlineMenu }, { label: 'Race (lokaal)', action: raceIntro }] : [];
+  return [{ label: 'Race online', action: onlineMenu }, ...(debug ? [{ label: 'Race (lokaal)', action: raceIntro }] : [])];
 }
 
 /** What the connection shows on screen. */

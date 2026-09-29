@@ -116,7 +116,7 @@ All sound is synthesised with Web Audio in `src/render/audio.ts`: no audio files
 
 Background music is generated live too (`src/render/music.ts`): a soft pad, a bass note and a sparse arpeggio with echo, looping over a four-chord progression. Every mood has its own key, scale and tempo: the title (D minor, wide), Kepler-442 (A dorian, a bit of drive), Nereid-117 (E minor, slow and glassy), Umbra-9 (C phrygian, eerie) and Viridia (G harmonic minor, 104 bpm). Viridia is the finale and gets an extra rhythm layer: a soft kick, off-beat hats and a pulsing bass, mixed to the same peak level as the other moods. Music crossfades when you land somewhere else, gets darker at night and softer in menus. N or the title screen switches music off; M still mutes everything.
 
-## Race mode (designed, not built)
+## Race mode
 
 A two-player versus mode. Solo play stays as it is and keeps working offline; race is an extra mode that needs a server.
 
@@ -174,7 +174,7 @@ Online there is no pause, and the workbench does not stop the race. A dropped co
 
 ### Playing locally
 
-Until the server exists, a race is played by two players on one keyboard. The title screen offers "Race (lokaal)" in development, with `?debug`, or with `?race` in the address; the live game does not show it otherwise.
+Two players on one keyboard is a tool for testing race rules without a server. The title screen offers "Race (lokaal)" only in development or with `?debug` in the address.
 
 - **Player 1:** WASD, E action, F lamp, Q bottle, R beacon, B bomb.
 - **Player 2:** arrows, Enter action, right Shift lamp, / bottle, . beacon, comma bomb.
@@ -238,7 +238,7 @@ The own astronaut is predicted (`net/predict.ts`), because the first playtest fe
 4. Room server and room codes, in three pull requests:
    - 4a. Match core and per-player view: `src/net/`, pure and tested, no Cloudflare yet.
    - 4b. The Worker and Durable Object, local runs with `wrangler dev`, the deploy workflow.
-   - ~~4c. The client: "Race online" on the title screen (make a room, join with a code), the mirror state with interpolation, disconnects and "Revanche".~~ Like the local race, it shows on the title screen only in development, with `?debug` or with `?race`, until it has been playtested.
+   - ~~4c. The client: "Race online" on the title screen (make a room, join with a code), the mirror state with interpolation, disconnects and "Revanche".~~ After the first playtests, "Race online" is on the title screen for everyone.
 5. Rematch, mobile testing, balance.
 
 ## Roadmap
@@ -251,7 +251,7 @@ The own astronaut is predicted (`net/predict.ts`), because the first playtest fe
 6. ~~Polish: sound, title screen, balance~~
 7. ~~Gliders on Nereid-117, Viridia as planet 4 with every kind of creeper, its own music, title music from the first click~~
 8. ~~Touch controls for phones and tablets~~
-9. Race mode (two players, one planet): designed, see above
+9. ~~Race mode (two players, one planet)~~, online for everyone
 
 ## Open questions
 
