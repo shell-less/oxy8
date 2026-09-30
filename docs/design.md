@@ -22,7 +22,7 @@ Food was considered and dropped: oxygen alone keeps the pressure on.
 
 ## Day and night
 
-A full day lasts 5 real minutes. Nights are dark: you see what your helmet lamp, bunker lights and crystals light up. The lamp costs energy at night and switches off when energy runs out. With the lamp off at night, creepers only notice you from about half the distance, but you also see almost nothing and reveal less of the minimap.
+A full day lasts 5 real minutes. Nights are dark: you see what your helmet lamp, bunker lights and crystals light up. The lamp is off when you land; F (or the lamp button) switches it on. It costs energy at night and switches off when energy runs out. With the lamp off at night, creepers only notice you from about half the distance, but you also see almost nothing and reveal less of the minimap.
 
 ## Creepers
 

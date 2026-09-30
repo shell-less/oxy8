@@ -77,9 +77,15 @@ describe('creepers', () => {
 });
 
 describe('helmet lamp', () => {
+  it('is off when you land', () => {
+    expect(landOn(0).players[0].lamp).toBe(false);
+    expect(landOn(2).players[0].lamp).toBe(false);
+  });
+
   it('costs energy only at night', () => {
     const s = landOn(0);
     removeCreepers(s);
+    s.players[0].lamp = true;
     run(s, 5);
     expect(s.players[0].energy).toBe(CONFIG.player.startEnergy);
     s.time = CONFIG.day.lengthSeconds * (23 / 24);
@@ -91,6 +97,7 @@ describe('helmet lamp', () => {
     const s = landOn(0);
     removeCreepers(s);
     s.time = CONFIG.day.lengthSeconds * (23 / 24);
+    s.players[0].lamp = true;
     s.players[0].energy = 0.01;
     run(s, 1);
     expect(s.players[0].lamp).toBe(false);

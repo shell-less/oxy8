@@ -148,8 +148,8 @@ export const TIPS: readonly Tip[] = [
   },
   {
     id: 'lamp',
-    text: 'Het wordt donker. Je helmlamp (F) kost \'s nachts energie.',
-    touchText: 'Het wordt donker. Je helmlamp kost \'s nachts energie. De lamp-knop zet hem aan en uit.',
+    text: 'Het wordt donker. Zet je helmlamp aan met F. \'s Nachts kost hij energie.',
+    touchText: 'Het wordt donker. De lamp-knop zet je helmlamp aan en uit. \'s Nachts kost hij energie.',
     when: (s) => darkness(s) > 0.2,
   },
   {
