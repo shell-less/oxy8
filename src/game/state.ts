@@ -289,7 +289,8 @@ export function newPlayer(id: number, world: World, x: number, y: number, energy
     partsCarried: 0,
     partsInstalled: 0,
     inventory: inventory ? { ...inventory } : emptyInventory(),
-    lamp: true,
+    // Off at the start: switching it on (F) is the player's choice, and it costs energy at night.
+    lamp: false,
     interaction: { target: null, progress: 0, latched: false },
     inPool: false,
     explored: new Uint8Array(world.tilesX * world.tilesY),
