@@ -168,7 +168,7 @@ Hard to spot, but readable: a tiny red blink every ~2.5 s, visible within ~50 px
 
 ### Playing online
 
-"Race online" on the title screen offers "Kamer maken" and "Meedoen met code". The maker sees the four-letter code large on the title scene and passes it on; the other types it in (any case, spaces allowed). The race starts the moment the second player is in, with a toast saying which side your ship is on. One player per device: WASD or arrows, E, F, Q, R and B for the bomb. On a touch screen a red "Bom" button appears left of the lamp while you carry a bomb; it is dimmed where a bomb may not lie (away from a bunker, near a ship).
+"Race online" on the title screen offers "Kamer maken" and "Meedoen met code". The maker sees the four-letter code large on the title scene and passes it on; the other types it in (any case, spaces allowed). The race starts the moment the second player is in, with a toast saying which side your ship is on. One player per device: WASD or arrows, E, F, Q, R and B for the bomb; the key legend in the corner shows them (B fades while you carry no bomb, P is left out because an online race cannot pause). On a touch screen a red "Bom" button appears left of the lamp while you carry a bomb; it is dimmed where a bomb may not lie (away from a bunker, near a ship).
 
 Online there is no pause, and the workbench does not stop the race. A dropped connection reconnects by itself for 20 seconds; the other player sees "De ander is weggevallen" and "De ander is terug". The result is told from your side ("Je wint", "Je liep op een bom") with "Revanche" and "Menu".
 
