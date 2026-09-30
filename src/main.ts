@@ -616,6 +616,7 @@ function frame(now: number): void {
   if (running && inputMode.touch && portrait.matches && !online) pauseMenu();
   touch.setActive(running && inputMode.touch);
   gameEl.classList.toggle('race', state.mode === 'race' && !titleMode);
+  gameEl.classList.toggle('local-race', state.mode === 'race' && !titleMode && !online);
   if (online && online.state === state) {
     // A network race: the server simulates, this browser sends input and draws the mirror.
     const input = mergeInput(keyboard.poll(), touch.poll());

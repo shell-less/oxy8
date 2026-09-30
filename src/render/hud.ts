@@ -67,17 +67,19 @@ export class Hud {
 
     const inv = me.inventory;
     const items: string[] = [];
-    // Key hints only in solo on a keyboard: in a race the two players use different keys.
-    const key = (k: string) => (this.touch || state.race ? '' : ` (${k})`);
+    // Key hints on a keyboard, except with two players on one keyboard: they use different keys.
+    const localRace = state.race !== null && !state.race.online;
+    const key = (k: string) => (this.touch || localRace ? '' : ` (${k})`);
     if (inv.scrap > 0) items.push(`Schroot ${inv.scrap}`);
     if (inv.bottles > 0) items.push(`Fles ${inv.bottles}${key('Q')}`);
     if (inv.beacons > 0) items.push(`Baken ${inv.beacons}${key('R')}`);
-    if (me.bombs > 0) items.push(`Bom ${me.bombs}`);
+    if (me.bombs > 0) items.push(`Bom ${me.bombs}${key('B')}`);
     if (inv.armour) items.push('Pak versterkt');
     this.text(el.inventory, items.join(' · '));
 
     for (const key of el.keys.querySelectorAll<HTMLElement>('[data-item]')) {
-      const have = key.dataset.item === 'bottle' ? inv.bottles > 0 : inv.beacons > 0;
+      const item = key.dataset.item;
+      const have = item === 'bottle' ? inv.bottles > 0 : item === 'bomb' ? me.bombs > 0 : inv.beacons > 0;
       key.classList.toggle('unavailable', !have);
     }
 

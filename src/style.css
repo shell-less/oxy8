@@ -140,6 +140,9 @@ html, body { margin: 0; height: 100%; }
 }
 /* Item keys fade when you have nothing to use them on. */
 #keys .unavailable { opacity: 0.45; }
+/* The bomb key only in a race; no pause in a race (an online race goes on). */
+#keys .race-only, #game.race #keys .solo-only { display: none; }
+#game.race #keys .race-only { display: inline; }
 
 #minimap {
   bottom: 8px;
@@ -202,8 +205,8 @@ html, body { margin: 0; height: 100%; }
   border-radius: 4px;
 }
 #overlay-input[hidden] { display: none; }
-/* The solo key legend does not fit a race: the race intro names both players' keys. */
-#game.race #keys, #game.race #overlay-keys { display: none; }
+/* Two players on one keyboard use other keys: their intro names them, so no legend there. */
+#game.local-race #keys, #game.race #overlay-keys { display: none; }
 /* A race has no star map: the ship menu is only the workbench. */
 #starmap.race #starmap-column { display: none; }
 #starmap-title { font-size: 1.4em; font-weight: 600; }
